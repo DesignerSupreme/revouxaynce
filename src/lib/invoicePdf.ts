@@ -117,13 +117,13 @@ export function generateInvoicePDF(
   // ─── LINE ITEMS TABLE ─────────────────────────────────────
   const items = invoice.lineItems.length > 0
     ? invoice.lineItems
-    : [{ desc: "Event services", amount: invoice.amount }];
+    : [{ desc: "Event services", qty: 1, unitPrice: invoice.amount, amount: invoice.amount }];
 
   const tableBody = items.map((li, i) => [
     String(i + 1),
     li.desc,
-    "1",
-    fmt$(li.amount),
+    String(li.qty),
+    fmt$(li.unitPrice),
     fmt$(li.amount),
   ]);
 
