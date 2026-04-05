@@ -376,6 +376,19 @@ function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamM
   const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v2", () => []);
   const toast = React.useContext(ToastCtx);
 
+  const resetAllData = useCallback(() => {
+    setEvents(seedEvents());
+    setClients(seedClients());
+    setVendors(seedVendors());
+    setInvoices(seedInvoices());
+    setGuests(seedGuests());
+    setExpenses(seedExpenses());
+    setTimelines([]);
+    setBudgets([]);
+    setActivities([]);
+    toast("Sample data has been reset");
+  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, toast]);
+
   const log = useCallback((text: string) => {
     setActivities(a => [{ id: uid(), text, time: new Date().toISOString() }, ...a].slice(0, 20));
   }, [setActivities]);
