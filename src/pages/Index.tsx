@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Store, DollarSign, UserCheck,
   Plus, Trash2, Edit, X, ChevronRight, Star, Download, Clock,
-  FileText, AlertCircle, Menu, ArrowUpDown, Receipt, Camera, Upload
+  FileText, AlertCircle, Menu, ArrowUpDown, Receipt, Camera, Upload,
+  Lock, LogOut, Shield, Eye, EyeOff, BarChart3, TrendingUp
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
 
@@ -15,7 +16,8 @@ interface Vendor { id: string; name: string; category: string; contact: string; 
 interface Invoice { id: string; clientId: string; eventId: string; amount: number; status: string; dueDate: string; notes: string; lineItems: { desc: string; amount: number }[]; }
 interface Guest { id: string; name: string; eventId: string; email: string; phone: string; rsvp: string; dietary: string; tableGroup: string; }
 interface Expense { id: string; date: string; vendor: string; category: string; amount: number; eventId: string; notes: string; receiptUrl: string; }
-type Tab = "dashboard" | "events" | "clients" | "vendors" | "finances" | "guests" | "expenses";
+interface TeamMember { id: string; name: string; email: string; password: string; role: "admin" | "member"; access: string[]; }
+type Tab = "dashboard" | "events" | "clients" | "vendors" | "finances" | "guests" | "expenses" | "team";
 
 // ─── Helpers ──────────────────────────────────────────────────────
 const uid = () => crypto.randomUUID();
@@ -74,6 +76,9 @@ const seedExpenses = (): Expense[] => [
   { id: uid(), date: "2026-04-02", vendor: "Maison Fleur", category: "Florals", amount: 3200, eventId: "", notes: "Centerpiece arrangements", receiptUrl: "" },
   { id: uid(), date: "2026-04-03", vendor: "Noir Catering Co.", category: "Catering", amount: 8500, eventId: "", notes: "Tasting session deposit", receiptUrl: "" },
   { id: uid(), date: "2026-03-28", vendor: "Office Depot", category: "Supplies", amount: 145.50, eventId: "", notes: "Printing & stationery", receiptUrl: "" },
+];
+const seedTeam = (): TeamMember[] => [
+  { id: uid(), name: "Chido Nyakanda", email: "nyakandachido@gmail.com", password: "m@n@n@5", role: "admin", access: ["dashboard","events","clients","vendors","finances","expenses","guests","team"] },
 ];
 
 // ─── Activity log ─────────────────────────────────────────────────
@@ -178,6 +183,17 @@ function Select({ label, options, ...props }: { label: string; options: string[]
     </label>
   );
 }
+function SelectLabeled({ label, options, ...props }: { label: string; options: { value: string; label: string }[] } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <label className="block mb-3">
+      <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground mb-1 block">{label}</span>
+      <select {...props} className="w-full border border-input bg-background px-3 py-2 text-sm font-sans focus:outline-none focus:border-foreground">
+        <option value="">Select...</option>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </label>
+  );
+}
 function Btn({ children, variant = "primary", ...props }: { variant?: "primary" | "secondary"; children: React.ReactNode } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button {...props} className={`px-4 py-2 text-sm font-sans tracking-wide uppercase transition-colors ${variant === "primary" ? "bg-foreground text-background hover:bg-foreground/90" : "bg-background text-foreground border border-foreground hover:bg-muted"} ${props.className || ""}`}>
@@ -196,10 +212,157 @@ function Empty({ icon: Icon, text }: { icon: React.ElementType; text: string }) 
   );
 }
 
+// ─── SVG Bar Chart ────────────────────────────────────────────────
+function BarChart({ data, height = 200 }: { data: { label: string; value: number }[]; height?: number }) {
+  if (data.length === 0) return <p className="text-sm text-muted-foreground font-sans">No data</p>;
+  const max = Math.max(...data.map(d => d.value), 1);
+  const barW = Math.min(40, Math.floor(300 / data.length));
+  const chartW = data.length * (barW + 12) + 20;
+  const chartH = height;
+  const barArea = chartH - 40;
+
+  return (
+    <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ maxHeight: height }}>
+      {/* Grid lines */}
+      {[0, 0.25, 0.5, 0.75, 1].map(p => (
+        <line key={p} x1={0} x2={chartW} y1={barArea - barArea * p} y2={barArea - barArea * p}
+          stroke="currentColor" strokeOpacity={0.1} strokeWidth={0.5} />
+      ))}
+      {data.map((d, i) => {
+        const barH = (d.value / max) * barArea;
+        const x = i * (barW + 12) + 10;
+        const y = barArea - barH;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW} height={barH} fill="currentColor" opacity={0.85} />
+            <text x={x + barW / 2} y={barArea + 14} textAnchor="middle" fontSize={8} fill="currentColor" opacity={0.5}
+              className="font-sans">{d.label.length > 8 ? d.label.slice(0, 7) + "…" : d.label}</text>
+            <text x={x + barW / 2} y={y - 4} textAnchor="middle" fontSize={7} fill="currentColor" opacity={0.6}
+              className="font-sans">{d.value >= 1000 ? `$${(d.value / 1000).toFixed(1)}k` : `$${d.value}`}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ─── Horizontal Bar Chart ─────────────────────────────────────────
+function HBarChart({ data }: { data: { label: string; value: number; fill?: string }[] }) {
+  if (data.length === 0) return null;
+  const max = Math.max(...data.map(d => d.value), 1);
+  return (
+    <div className="space-y-2">
+      {data.map((d, i) => (
+        <div key={i}>
+          <div className="flex justify-between text-xs font-sans mb-1">
+            <span>{d.label}</span>
+            <span className="font-semibold">{fmt$(d.value)}</span>
+          </div>
+          <div className="w-full bg-muted h-3">
+            <div className="h-3 bg-foreground transition-all" style={{ width: `${(d.value / max) * 100}%`, opacity: d.fill === "light" ? 0.3 : 0.85 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LOGIN PAGE
+// ═══════════════════════════════════════════════════════════════════
+function LoginPage({ onLogin, team }: { onLogin: (member: TeamMember) => void; team: TeamMember[] }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    const member = team.find(m => m.email.toLowerCase() === email.toLowerCase() && m.password === password);
+    if (member) {
+      onLogin(member);
+    } else {
+      setError("Invalid email or password");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-10">
+          <img src={logo} alt="Revouxaynce" className="h-16 w-auto" />
+        </div>
+        <div className="border border-foreground p-8">
+          <h1 className="font-display text-2xl text-center mb-1">Welcome Back</h1>
+          <p className="text-xs text-muted-foreground font-sans text-center mb-8 uppercase tracking-wider">Sign in to continue</p>
+          <form onSubmit={handleSubmit}>
+            <label className="block mb-4">
+              <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground mb-1 block">Email</span>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                className="w-full border border-input bg-background px-3 py-2.5 text-sm font-sans focus:outline-none focus:border-foreground"
+                placeholder="you@example.com" required />
+            </label>
+            <label className="block mb-6">
+              <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground mb-1 block">Password</span>
+              <div className="relative">
+                <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                  className="w-full border border-input bg-background px-3 py-2.5 text-sm font-sans focus:outline-none focus:border-foreground pr-10"
+                  placeholder="••••••••" required />
+                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </label>
+            {error && <p className="text-sm font-sans mb-4 text-foreground bg-muted px-3 py-2 border border-foreground">{error}</p>}
+            <button type="submit" className="w-full bg-foreground text-background py-2.5 text-sm font-sans uppercase tracking-wider hover:bg-foreground/90 transition-colors">
+              Sign In
+            </button>
+          </form>
+        </div>
+        <p className="text-xs text-muted-foreground font-sans text-center mt-6">© Revouxaynce 2026</p>
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════
 const Revouxaynce = () => {
+  const [team, setTeam] = useLocalStorage<TeamMember[]>("team", seedTeam);
+  const [currentUser, setCurrentUser] = useState<TeamMember | null>(() => {
+    try { const s = localStorage.getItem("currentUser"); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+
+  const handleLogin = (member: TeamMember) => {
+    setCurrentUser(member);
+    localStorage.setItem("currentUser", JSON.stringify(member));
+  };
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem("currentUser");
+  };
+
+  // Keep currentUser in sync with team updates
+  useEffect(() => {
+    if (currentUser) {
+      const updated = team.find(m => m.id === currentUser.id);
+      if (updated && JSON.stringify(updated) !== JSON.stringify(currentUser)) {
+        setCurrentUser(updated);
+        localStorage.setItem("currentUser", JSON.stringify(updated));
+      }
+    }
+  }, [team, currentUser]);
+
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} team={team} />;
+  }
+
+  return <AppShell currentUser={currentUser} onLogout={handleLogout} team={team} setTeam={setTeam} />;
+};
+
+function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamMember; onLogout: () => void; team: TeamMember[]; setTeam: React.Dispatch<React.SetStateAction<TeamMember[]>> }) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [events, setEvents] = useLocalStorage("events", seedEvents);
@@ -231,7 +394,7 @@ const Revouxaynce = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const navItems: { key: Tab; label: string; icon: React.ElementType }[] = [
+  const allNavItems: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { key: "events", label: "Events", icon: CalendarDays },
     { key: "clients", label: "Clients", icon: Users },
@@ -239,9 +402,26 @@ const Revouxaynce = () => {
     { key: "finances", label: "Finances", icon: DollarSign },
     { key: "expenses", label: "Expenses", icon: Receipt },
     { key: "guests", label: "Guests", icon: UserCheck },
+    ...(currentUser.role === "admin" ? [{ key: "team" as Tab, label: "Team", icon: Shield }] : []),
   ];
 
-  const handleNav = (t: Tab) => { setTab(t); setSidebarOpen(false); };
+  const navItems = allNavItems.filter(n => currentUser.access.includes(n.key) || n.key === "team");
+
+  const handleNav = (t: Tab) => {
+    if (!currentUser.access.includes(t) && t !== "team") {
+      toast("You don't have access to this section");
+      return;
+    }
+    setTab(t); setSidebarOpen(false);
+  };
+
+  // If current tab not accessible, go to first available
+  useEffect(() => {
+    if (!currentUser.access.includes(tab) && tab !== "team") {
+      const first = navItems[0]?.key || "dashboard";
+      setTab(first);
+    }
+  }, [currentUser, tab, navItems]);
 
   const SidebarLogo = () => (
     <div className="px-4 py-6 border-b border-sidebar-border flex justify-center">
@@ -262,7 +442,20 @@ const Revouxaynce = () => {
             </button>
           ))}
         </nav>
-        <div className="px-6 py-4 border-t border-sidebar-border text-xs text-sidebar-foreground/50">© Revouxaynce 2026</div>
+        <div className="px-4 py-3 border-t border-sidebar-border">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 bg-sidebar-accent rounded-full flex items-center justify-center text-xs font-semibold text-sidebar-accent-foreground">
+              {currentUser.name.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold truncate">{currentUser.name}</div>
+              <div className="text-[10px] text-sidebar-foreground/50 uppercase">{currentUser.role}</div>
+            </div>
+          </div>
+          <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
+            <LogOut size={12} /> Sign Out
+          </button>
+        </div>
       </aside>
 
       {/* Mobile overlay sidebar */}
@@ -279,6 +472,11 @@ const Revouxaynce = () => {
                 </button>
               ))}
             </nav>
+            <div className="px-4 py-3 border-t border-sidebar-border">
+              <button onClick={onLogout} className="flex items-center gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground">
+                <LogOut size={12} /> Sign Out
+              </button>
+            </div>
           </aside>
         </div>
       )}
@@ -289,7 +487,7 @@ const Revouxaynce = () => {
         <div className="md:hidden flex items-center justify-between border-b px-4 py-3">
           <button onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
           <img src={logo} alt="Revouxaynce" className="h-8 w-auto" />
-          <div className="w-5" />
+          <button onClick={onLogout}><LogOut size={18} /></button>
         </div>
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
@@ -297,15 +495,16 @@ const Revouxaynce = () => {
           {tab === "events" && <EventsView events={events} setEvents={setEvents} clients={clients} vendors={vendors} guests={guests} setGuests={setGuests} timelines={timelines} setTimelines={setTimelines} budgets={budgets} setBudgets={setBudgets} log={log} toast={toast} />}
           {tab === "clients" && <ClientsView clients={clients} setClients={setClients} events={events} log={log} toast={toast} />}
           {tab === "vendors" && <VendorsView vendors={vendors} setVendors={setVendors} events={events} log={log} toast={toast} />}
-          {tab === "finances" && <FinancesView invoices={invoices} setInvoices={setInvoices} clients={clients} events={events} budgets={budgets} log={log} toast={toast} />}
+          {tab === "finances" && <FinancesView invoices={invoices} setInvoices={setInvoices} clients={clients} events={events} expenses={expenses} budgets={budgets} log={log} toast={toast} />}
           {tab === "expenses" && <ExpensesView expenses={expenses} setExpenses={setExpenses} events={events} log={log} toast={toast} />}
           {tab === "guests" && <GuestsView guests={guests} setGuests={setGuests} events={events} log={log} toast={toast} />}
+          {tab === "team" && currentUser.role === "admin" && <TeamView team={team} setTeam={setTeam} currentUser={currentUser} toast={toast} log={log} />}
         </div>
       </main>
 
       {/* Mobile bottom tab bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t flex z-40">
-        {navItems.map(n => (
+        {navItems.slice(0, 6).map(n => (
           <button key={n.key} onClick={() => handleNav(n.key)}
             className={`flex-1 flex flex-col items-center py-2 text-[10px] tracking-wide ${tab === n.key ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
             <n.icon size={18} /> {n.label}
@@ -314,10 +513,10 @@ const Revouxaynce = () => {
       </nav>
     </div>
   );
-};
+}
 
 // ═══════════════════════════════════════════════════════════════════
-// DASHBOARD — IMPROVED
+// DASHBOARD — WITH GRAPHS
 // ═══════════════════════════════════════════════════════════════════
 function DashboardView({ events, clients, invoices, guests, expenses, activities, setTab }: any) {
   const upcoming = events.filter((e: Event) => new Date(e.date) >= new Date() && e.status !== "Wrapped").length;
@@ -327,6 +526,7 @@ function DashboardView({ events, clients, invoices, guests, expenses, activities
   const overdue = invoices.filter((i: Invoice) => i.status === "Overdue");
   const overdueTotal = overdue.reduce((s: number, i: Invoice) => s + i.amount, 0);
   const totalExpenses = expenses.reduce((s: number, e: Expense) => s + e.amount, 0);
+  const totalRevenue = invoices.filter((i: Invoice) => i.status === "Paid").reduce((s: number, i: Invoice) => s + i.amount, 0);
   const now = new Date();
 
   // Mini calendar
@@ -335,12 +535,22 @@ function DashboardView({ events, clients, invoices, guests, expenses, activities
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const eventDates = new Set(events.filter((e: Event) => { const d = new Date(e.date); return d.getMonth() === month && d.getFullYear() === year; }).map((e: Event) => new Date(e.date).getDate()));
 
+  // Expense by category chart data
+  const expByCat: Record<string, number> = {};
+  expenses.forEach((e: Expense) => { expByCat[e.category] = (expByCat[e.category] || 0) + e.amount; });
+  const expChartData = Object.entries(expByCat).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+
+  // Invoice status chart data
+  const invByStatus: Record<string, number> = {};
+  invoices.forEach((i: Invoice) => { invByStatus[i.status] = (invByStatus[i.status] || 0) + i.amount; });
+  const invChartData = Object.entries(invByStatus).map(([label, value]) => ({ label, value }));
+
   return (
     <div>
       <h1 className="text-3xl mb-8">Dashboard</h1>
 
       {/* Top Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div className="border border-foreground p-5">
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-sans">Upcoming Events</div>
           <div className="text-3xl font-display">{upcoming}</div>
@@ -352,14 +562,19 @@ function DashboardView({ events, clients, invoices, guests, expenses, activities
           <div className="text-xs text-muted-foreground mt-1 font-sans">{clients.length} total</div>
         </div>
         <div className="border border-foreground p-5">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-sans">Revenue</div>
+          <div className="text-3xl font-display">{fmt$(totalRevenue)}</div>
+          <div className="text-xs text-muted-foreground mt-1 font-sans">collected</div>
+        </div>
+        <div className="border border-foreground p-5">
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-sans">Total Expenses</div>
           <div className="text-3xl font-display">{fmt$(totalExpenses)}</div>
           <div className="text-xs text-muted-foreground mt-1 font-sans">{expenses.length} recorded</div>
         </div>
         <div className="border border-foreground p-5">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-sans">Total Guests</div>
-          <div className="text-3xl font-display">{guests.length}</div>
-          <div className="text-xs text-muted-foreground mt-1 font-sans">{guests.filter((g: Guest) => g.rsvp === "Attending").length} attending</div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-sans">Net Profit</div>
+          <div className="text-3xl font-display">{fmt$(totalRevenue - totalExpenses)}</div>
+          <div className="text-xs text-muted-foreground mt-1 font-sans">{totalRevenue > 0 ? `${((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(0)}% margin` : "—"}</div>
         </div>
       </div>
 
@@ -416,6 +631,24 @@ function DashboardView({ events, clients, invoices, guests, expenses, activities
             <div className="font-display text-lg">{fmt$(unpaidTotal)}</div>
           </div>
         )}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="border border-foreground p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 size={14} className="text-muted-foreground" />
+            <h3 className="text-sm uppercase tracking-wider text-muted-foreground font-sans">Expenses by Category</h3>
+          </div>
+          <BarChart data={expChartData} />
+        </div>
+        <div className="border border-foreground p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp size={14} className="text-muted-foreground" />
+            <h3 className="text-sm uppercase tracking-wider text-muted-foreground font-sans">Invoices by Status</h3>
+          </div>
+          <HBarChart data={invChartData} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -492,7 +725,7 @@ function DashboardView({ events, clients, invoices, guests, expenses, activities
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// EXPENSES — NEW MODULE
+// EXPENSES — WITH CHARTS
 // ═══════════════════════════════════════════════════════════════════
 function ExpensesView({ expenses, setExpenses, events, log, toast }: any) {
   const [modal, setModal] = useState(false);
@@ -512,6 +745,20 @@ function ExpensesView({ expenses, setExpenses, events, log, toast }: any) {
     return true;
   });
   const totalFiltered = filtered.reduce((s: number, e: Expense) => s + e.amount, 0);
+
+  // Chart data - expenses by category
+  const byCat: Record<string, number> = {};
+  filtered.forEach((e: Expense) => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
+  const catChartData = Object.entries(byCat).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+
+  // Chart data - expenses by event
+  const byEvent: Record<string, number> = {};
+  filtered.forEach((e: Expense) => {
+    const ev = events.find((x: Event) => x.id === e.eventId);
+    const name = ev?.name || "Unassigned";
+    byEvent[name] = (byEvent[name] || 0) + e.amount;
+  });
+  const eventChartData = Object.entries(byEvent).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 
   const save = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -535,66 +782,28 @@ function ExpensesView({ expenses, setExpenses, events, log, toast }: any) {
     setDeleting(null);
   };
 
-  // Receipt scanning via image upload + OCR simulation
   const handleReceiptUpload = async (file: File) => {
     setScanning(true);
     setScanResult(null);
-
-    // Read the file as data URL for receipt storage
     const reader = new FileReader();
     reader.onload = () => {
       const receiptUrl = reader.result as string;
-
-      // Extract text from receipt image using basic heuristics
-      // In production, this would use Tesseract.js or a cloud OCR API
-      // For now, we'll analyze the filename and simulate smart extraction
       const fileName = file.name.toLowerCase();
-
-      // Try to extract info from filename patterns
       let vendor = "";
       let amount = 0;
       let category = "Other";
       const today = new Date().toISOString().slice(0, 10);
-
-      // Common receipt filename patterns
       if (fileName.includes("receipt") || fileName.includes("invoice")) {
-        // Try to parse amount from filename like "receipt_45.99.jpg"
         const amountMatch = fileName.match(/(\d+[.,]\d{2})/);
         if (amountMatch) amount = parseFloat(amountMatch[1].replace(",", "."));
       }
-
-      // Use canvas to read the receipt image for OCR-like extraction
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          // Analyze image brightness patterns as a basic check
-          // (Real OCR would go here with Tesseract.js)
-        }
-
-        setScanResult({
-          date: today,
-          vendor: vendor || "Scanned Receipt",
-          category,
-          amount,
-          notes: `Scanned from ${file.name}`,
-          receiptUrl,
-        });
+        setScanResult({ date: today, vendor: vendor || "Scanned Receipt", category, amount, notes: `Scanned from ${file.name}`, receiptUrl });
         setScanning(false);
       };
       img.onerror = () => {
-        setScanResult({
-          date: today,
-          vendor: "Scanned Receipt",
-          category: "Other",
-          amount: 0,
-          notes: `From ${file.name}`,
-          receiptUrl,
-        });
+        setScanResult({ date: today, vendor: "Scanned Receipt", category: "Other", amount: 0, notes: `From ${file.name}`, receiptUrl });
         setScanning(false);
       };
       img.src = receiptUrl;
@@ -666,6 +875,24 @@ function ExpensesView({ expenses, setExpenses, events, log, toast }: any) {
         </div>
       </div>
 
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="border border-foreground p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 size={14} className="text-muted-foreground" />
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-sans">By Category</h3>
+          </div>
+          <BarChart data={catChartData} height={180} />
+        </div>
+        <div className="border border-foreground p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 size={14} className="text-muted-foreground" />
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-sans">By Event</h3>
+          </div>
+          <HBarChart data={eventChartData} />
+        </div>
+      </div>
+
       {/* Expense list */}
       {filtered.length === 0 ? <Empty icon={Receipt} text="No expenses found. Log your first expense or scan a receipt." /> : (
         <div className="overflow-x-auto">
@@ -719,8 +946,7 @@ function ExpensesView({ expenses, setExpenses, events, log, toast }: any) {
           <Input label="Vendor / Payee" name="vendor" defaultValue={editing?.vendor} required />
           <Select label="Category" name="category" options={categories} defaultValue={editing?.category} />
           <Input label="Amount" name="amount" type="number" step="0.01" defaultValue={editing?.amount} required />
-          <Select label="Event" name="eventId" options={events.map((e: Event) => e.id)} defaultValue={editing?.eventId}>
-          </Select>
+          <SelectLabeled label="Event" name="eventId" options={events.map((e: Event) => ({ value: e.id, label: e.name }))} defaultValue={editing?.eventId} />
           <TextArea label="Notes" name="notes" defaultValue={editing?.notes} />
           <input type="hidden" name="receiptUrl" value={editing?.receiptUrl || ""} />
           <div className="flex gap-3 mt-4">
@@ -743,7 +969,6 @@ function ExpensesView({ expenses, setExpenses, events, log, toast }: any) {
               <p className="font-sans text-xs text-muted-foreground">Supports JPG, PNG, PDF</p>
             </div>
             <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) handleReceiptUpload(file); }} />
-            <p className="text-xs text-muted-foreground font-sans mt-4">The receipt will be analyzed and expense details auto-filled. You can review and edit before saving.</p>
           </div>
         )}
         {scanning && (
@@ -767,8 +992,7 @@ function ExpensesView({ expenses, setExpenses, events, log, toast }: any) {
                   <Input label="Vendor" name="vendor" defaultValue={scanResult.vendor} required />
                   <Select label="Category" name="category" options={categories} defaultValue={scanResult.category} />
                   <Input label="Amount" name="amount" type="number" step="0.01" defaultValue={scanResult.amount} required />
-                  <Select label="Event" name="eventId" options={events.map((e: Event) => e.id)} defaultValue={scanResult.eventId}>
-                  </Select>
+                  <SelectLabeled label="Event" name="eventId" options={events.map((e: Event) => ({ value: e.id, label: e.name }))} defaultValue={scanResult.eventId} />
                   <TextArea label="Notes" name="notes" defaultValue={scanResult.notes} />
                   <input type="hidden" name="receiptUrl" value={scanResult.receiptUrl || ""} />
                   <div className="flex gap-3 mt-4">
@@ -867,7 +1091,7 @@ function EventsView({ events, setEvents, clients, vendors, guests, setGuests, ti
             <Input label="Time" name="time" type="time" defaultValue={editing?.time} />
           </div>
           <Input label="Venue" name="venue" defaultValue={editing?.venue} />
-          <Select label="Client" name="clientId" options={clients.map((c: Client) => c.id)} defaultValue={editing?.clientId} />
+          <SelectLabeled label="Client" name="clientId" options={clients.map((c: Client) => ({ value: c.id, label: c.name }))} defaultValue={editing?.clientId} />
           <Select label="Status" name="status" options={["Planning", "Confirmed", "Day-Of", "Wrapped"]} defaultValue={editing?.status || "Planning"} />
           <TextArea label="Notes" name="notes" defaultValue={editing?.notes} />
           <div className="flex gap-3 mt-4">
@@ -1276,9 +1500,9 @@ function VendorsView({ vendors, setVendors, events, log, toast }: any) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// FINANCES
+// FINANCES — WITH CHARTS
 // ═══════════════════════════════════════════════════════════════════
-function FinancesView({ invoices, setInvoices, clients, events, budgets, log, toast }: any) {
+function FinancesView({ invoices, setInvoices, clients, events, expenses, budgets, log, toast }: any) {
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Invoice | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
@@ -1287,6 +1511,22 @@ function FinancesView({ invoices, setInvoices, clients, events, budgets, log, to
   const totalPaid = invoices.filter((i: Invoice) => i.status === "Paid").reduce((s: number, i: Invoice) => s + i.amount, 0);
   const outstanding = totalBilled - totalPaid;
   const overdue = invoices.filter((i: Invoice) => i.status === "Overdue").reduce((s: number, i: Invoice) => s + i.amount, 0);
+  const totalExpenses = expenses.reduce((s: number, e: Expense) => s + e.amount, 0);
+
+  // Revenue vs Expenses chart per event
+  const eventPL: { label: string; revenue: number; cost: number }[] = [];
+  events.forEach((ev: Event) => {
+    const rev = invoices.filter((i: Invoice) => i.eventId === ev.id && i.status === "Paid").reduce((s: number, i: Invoice) => s + i.amount, 0);
+    const cost = expenses.filter((e: Expense) => e.eventId === ev.id).reduce((s: number, e: Expense) => s + e.amount, 0) +
+                 budgets.filter((b: BudgetItem) => b.eventId === ev.id).reduce((s: number, b: BudgetItem) => s + Number(b.actual), 0);
+    if (rev > 0 || cost > 0) eventPL.push({ label: ev.name, revenue: rev, cost });
+  });
+
+  // Invoice status breakdown chart
+  const invByStatus: Record<string, number> = {};
+  invoices.forEach((i: Invoice) => { invByStatus[i.status] = (invByStatus[i.status] || 0) + i.amount; });
+  const invStatusData = Object.entries(invByStatus).map(([label, value]) => ({ label, value }));
+
   const save = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const fd = new FormData(e.currentTarget); const obj: any = Object.fromEntries(fd.entries()); obj.amount = parseFloat(obj.amount) || 0;
     if (editing) { setInvoices((inv: Invoice[]) => inv.map(x => x.id === editing.id ? { ...x, ...obj, lineItems: x.lineItems } : x)); toast("Invoice updated"); log(`Updated invoice for ${fmt$(obj.amount)}`); }
@@ -1327,11 +1567,59 @@ function FinancesView({ invoices, setInvoices, clients, events, budgets, log, to
   return (
     <div>
       <div className="flex items-center justify-between mb-6"><h1 className="text-3xl">Finances</h1><Btn onClick={() => { setEditing(null); setModal(true); }}><Plus size={14} className="inline mr-1" /> New Invoice</Btn></div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[{ label: "Total Billed", value: fmt$(totalBilled) }, { label: "Total Paid", value: fmt$(totalPaid) }, { label: "Outstanding", value: fmt$(outstanding) }, { label: "Overdue", value: fmt$(overdue) }].map(c => (
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        {[
+          { label: "Total Billed", value: fmt$(totalBilled) },
+          { label: "Total Paid", value: fmt$(totalPaid) },
+          { label: "Outstanding", value: fmt$(outstanding) },
+          { label: "Overdue", value: fmt$(overdue) },
+          { label: "Net Profit", value: fmt$(totalPaid - totalExpenses) },
+        ].map(c => (
           <div key={c.label} className="border border-foreground p-4"><div className="text-xs uppercase tracking-wider text-muted-foreground mb-1 font-sans">{c.label}</div><div className="text-xl font-display">{c.value}</div></div>
         ))}
       </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="border border-foreground p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 size={14} className="text-muted-foreground" />
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-sans">Invoice Status Breakdown</h3>
+          </div>
+          <HBarChart data={invStatusData} />
+        </div>
+        <div className="border border-foreground p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={14} className="text-muted-foreground" />
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-sans">Per-Event P&L</h3>
+          </div>
+          {eventPL.length === 0 ? (
+            <p className="text-sm text-muted-foreground font-sans">No event P&L data yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {eventPL.map((ep, i) => (
+                <div key={i}>
+                  <div className="text-xs font-sans font-semibold mb-1">{ep.label}</div>
+                  <div className="flex gap-4 text-xs font-sans">
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-0.5"><span className="text-muted-foreground">Revenue</span><span>{fmt$(ep.revenue)}</span></div>
+                      <div className="w-full bg-muted h-2"><div className="h-2 bg-foreground" style={{ width: `${Math.min(100, (ep.revenue / Math.max(ep.revenue, ep.cost, 1)) * 100)}%` }} /></div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-0.5"><span className="text-muted-foreground">Costs</span><span>{fmt$(ep.cost)}</span></div>
+                      <div className="w-full bg-muted h-2"><div className="h-2 bg-foreground opacity-40" style={{ width: `${Math.min(100, (ep.cost / Math.max(ep.revenue, ep.cost, 1)) * 100)}%` }} /></div>
+                    </div>
+                  </div>
+                  <div className="text-xs font-sans mt-0.5 text-muted-foreground">
+                    Profit: {fmt$(ep.revenue - ep.cost)} ({ep.revenue > 0 ? `${((ep.revenue - ep.cost) / ep.revenue * 100).toFixed(0)}%` : "—"})
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {invoices.length === 0 ? <Empty icon={FileText} text="No invoices yet." /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-sans">
@@ -1361,8 +1649,8 @@ function FinancesView({ invoices, setInvoices, clients, events, budgets, log, to
       )}
       <Modal open={modal} onClose={() => { setModal(false); setEditing(null); }} title={editing ? "Edit Invoice" : "New Invoice"}>
         <form onSubmit={save}>
-          <Select label="Client" name="clientId" options={clients.map((c: Client) => c.id)} defaultValue={editing?.clientId} />
-          <Select label="Event" name="eventId" options={events.map((e: Event) => e.id)} defaultValue={editing?.eventId} />
+          <SelectLabeled label="Client" name="clientId" options={clients.map((c: Client) => ({ value: c.id, label: c.name }))} defaultValue={editing?.clientId} />
+          <SelectLabeled label="Event" name="eventId" options={events.map((e: Event) => ({ value: e.id, label: e.name }))} defaultValue={editing?.eventId} />
           <Input label="Amount" name="amount" type="number" step="0.01" defaultValue={editing?.amount} required />
           <Select label="Status" name="status" options={["Draft", "Sent", "Paid", "Overdue"]} defaultValue={editing?.status || "Draft"} />
           <Input label="Due Date" name="dueDate" type="date" defaultValue={editing?.dueDate} />
@@ -1445,13 +1733,139 @@ function GuestsView({ guests, setGuests, events, log, toast }: any) {
       <Modal open={modal} onClose={() => { setModal(false); setEditing(null); }} title={editing ? "Edit Guest" : "Add Guest"}>
         <form onSubmit={save}>
           <Input label="Name" name="name" defaultValue={editing?.name} required />
-          <Select label="Event" name="eventId" options={events.map((e: Event) => e.id)} defaultValue={editing?.eventId} />
+          <SelectLabeled label="Event" name="eventId" options={events.map((e: Event) => ({ value: e.id, label: e.name }))} defaultValue={editing?.eventId} />
           <Input label="Email" name="email" type="email" defaultValue={editing?.email} />
           <Input label="Phone" name="phone" defaultValue={editing?.phone} />
           <Select label="RSVP Status" name="rsvp" options={["Attending", "Declined", "Pending"]} defaultValue={editing?.rsvp || "Pending"} />
           <Input label="Dietary Notes" name="dietary" defaultValue={editing?.dietary} />
           <Input label="Table / Group" name="tableGroup" defaultValue={editing?.tableGroup} />
           <div className="flex gap-3 mt-4"><Btn type="submit">Save</Btn><Btn variant="secondary" type="button" onClick={() => { setModal(false); setEditing(null); }}>Cancel</Btn></div>
+        </form>
+      </Modal>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TEAM MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+function TeamView({ team, setTeam, currentUser, toast, log }: any) {
+  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<TeamMember | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const allSections = ["dashboard", "events", "clients", "vendors", "finances", "expenses", "guests"];
+
+  const save = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const name = fd.get("name") as string;
+    const email = fd.get("email") as string;
+    const password = fd.get("password") as string;
+    const role = fd.get("role") as "admin" | "member";
+    const access = allSections.filter(s => fd.get(`access_${s}`) === "on");
+
+    if (role === "admin") {
+      // Admins get all access
+      access.length = 0;
+      access.push(...allSections, "team");
+    }
+
+    if (editing) {
+      setTeam((t: TeamMember[]) => t.map(m => m.id === editing.id ? { ...m, name, email, password: password || m.password, role, access } : m));
+      toast("Team member updated"); log(`Updated team member: ${name}`);
+    } else {
+      if (!password) { toast("Password is required"); return; }
+      setTeam((t: TeamMember[]) => [...t, { id: uid(), name, email, password, role, access }]);
+      toast("Team member added"); log(`Added team member: ${name}`);
+    }
+    setModal(false); setEditing(null);
+  };
+
+  const remove = (id: string) => {
+    if (id === currentUser.id) { toast("Cannot delete your own account"); return; }
+    const m = team.find((x: TeamMember) => x.id === id);
+    setTeam((t: TeamMember[]) => t.filter(x => x.id !== id));
+    toast("Team member removed"); log(`Removed team member: ${m?.name}`);
+    setDeleting(null);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl">Team</h1>
+        <Btn onClick={() => { setEditing(null); setModal(true); }}><Plus size={14} className="inline mr-1" /> Add Member</Btn>
+      </div>
+
+      <p className="text-sm text-muted-foreground font-sans mb-6">Manage team members and control which sections they can access.</p>
+
+      {team.length === 0 ? <Empty icon={Shield} text="No team members." /> : (
+        <div className="space-y-3">
+          {team.map((m: TeamMember) => (
+            <div key={m.id} className="border border-foreground p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-semibold">
+                      {m.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="font-semibold font-sans text-sm">{m.name}</div>
+                      <div className="text-xs text-muted-foreground font-sans">{m.email}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <Badge status={m.role === "admin" ? "Admin" : "Member"} />
+                    {m.id === currentUser.id && <span className="text-xs text-muted-foreground font-sans">(You)</span>}
+                  </div>
+                  <div className="mt-3">
+                    <div className="text-xs text-muted-foreground font-sans uppercase tracking-wider mb-1">Access</div>
+                    <div className="flex flex-wrap gap-1">
+                      {m.access.filter(a => a !== "team").map(a => (
+                        <span key={a} className="text-xs border border-input px-2 py-0.5 font-sans capitalize">{a}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  {deleting === m.id ? (
+                    <ConfirmDelete onConfirm={() => remove(m.id)} onCancel={() => setDeleting(null)} />
+                  ) : (
+                    <>
+                      <button className="p-1.5 hover:bg-muted" onClick={() => { setEditing(m); setModal(true); }}><Edit size={14} /></button>
+                      {m.id !== currentUser.id && <button className="p-1.5 hover:bg-muted" onClick={() => setDeleting(m.id)}><Trash2 size={14} /></button>}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Modal open={modal} onClose={() => { setModal(false); setEditing(null); }} title={editing ? "Edit Team Member" : "Add Team Member"}>
+        <form onSubmit={save}>
+          <Input label="Full Name" name="name" defaultValue={editing?.name} required />
+          <Input label="Email" name="email" type="email" defaultValue={editing?.email} required />
+          <Input label={editing ? "Password (leave blank to keep)" : "Password"} name="password" type="password" defaultValue="" required={!editing} />
+          <Select label="Role" name="role" options={["admin", "member"]} defaultValue={editing?.role || "member"} />
+
+          <div className="mb-3">
+            <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground mb-2 block">Section Access</span>
+            <p className="text-xs text-muted-foreground font-sans mb-2">Admins automatically get full access. For members, select which sections they can see.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {allSections.map(s => (
+                <label key={s} className="flex items-center gap-2 text-sm font-sans cursor-pointer">
+                  <input type="checkbox" name={`access_${s}`} defaultChecked={editing ? editing.access.includes(s) : true} className="accent-foreground" />
+                  <span className="capitalize">{s}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-4">
+            <Btn type="submit">Save</Btn>
+            <Btn variant="secondary" type="button" onClick={() => { setModal(false); setEditing(null); }}>Cancel</Btn>
+          </div>
         </form>
       </Modal>
     </div>
