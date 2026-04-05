@@ -7,10 +7,10 @@ import type { Client, Task } from "@/types";
 import { ClientPortalView, PortalLogin } from "@/views/ClientPortalView";
 
 export function ClientPortalPage() {
-  const [events] = useLocalStorage("events_v4", seedEvents);
-  const [clients] = useLocalStorage("clients_v4", seedClients);
-  const [invoices] = useLocalStorage("invoices_v4", seedInvoices);
-  const [tasks] = useLocalStorage<Task[]>("tasks_v4", () => []);
+  const [events] = useLocalStorage("events_v5", seedEvents);
+  const [clients] = useLocalStorage("clients_v5", seedClients);
+  const [invoices] = useLocalStorage("invoices_v5", seedInvoices);
+  const [tasks] = useLocalStorage<Task[]>("tasks_v5", () => []);
   const [portalClient, setPortalClient] = useState<Client | null>(null);
 
   if (!portalClient) {

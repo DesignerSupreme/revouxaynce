@@ -28,6 +28,7 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
   const [editing, setEditing] = useState<Invoice | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [lineItems, setLineItems] = useState<{ desc: string; qty: number; unitPrice: number }[]>([]);
   const totalBilled = invoices.reduce((s, i) => s + i.amount, 0);
   const totalPaid = invoices.filter(i => i.status === "Paid").reduce((s, i) => s + i.amount, 0);
   const outstanding = totalBilled - totalPaid;
@@ -60,15 +61,16 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
-    const amount = parseFloat(obj.amount) || 0;
+    const items = lineItems.filter(li => li.desc.trim()).map(li => ({ desc: li.desc, qty: li.qty, unitPrice: li.unitPrice, amount: li.qty * li.unitPrice }));
+    const amount = items.length > 0 ? items.reduce((s, li) => s + li.amount, 0) : (parseFloat(obj.amount) || 0);
     if (editing) {
-      setInvoices(inv => inv.map(x => x.id === editing.id ? { ...x, clientId: obj.clientId || "", eventId: obj.eventId || "", amount, status: obj.status || "", dueDate: obj.dueDate || "", notes: obj.notes || "", lineItems: x.lineItems } : x));
+      setInvoices(inv => inv.map(x => x.id === editing.id ? { ...x, clientId: obj.clientId || "", eventId: obj.eventId || "", amount, status: obj.status || "", dueDate: obj.dueDate || "", notes: obj.notes || "", lineItems: items } : x));
       toast("Invoice updated"); log(`Updated invoice for ${fmt$(amount)}`);
     } else {
-      setInvoices(inv => [...inv, { id: uid(), clientId: obj.clientId || "", eventId: obj.eventId || "", amount, status: obj.status || "Draft", dueDate: obj.dueDate || "", notes: obj.notes || "", lineItems: [] }]);
+      setInvoices(inv => [...inv, { id: uid(), clientId: obj.clientId || "", eventId: obj.eventId || "", amount, status: obj.status || "Draft", dueDate: obj.dueDate || "", notes: obj.notes || "", lineItems: items }]);
       toast("Invoice created"); log(`Created invoice for ${fmt$(amount)}`);
     }
-    setModal(false); setEditing(null);
+    setModal(false); setEditing(null); setLineItems([]);
   };
   const remove = (id: string) => { setInvoices(inv => inv.filter(x => x.id !== id)); toast("Invoice deleted"); log("Deleted an invoice"); setDeleting(null); };
 
@@ -97,8 +99,8 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
           <div className="mt-6">
             <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-sans mb-2">Line Items</h3>
             <table className="w-full text-sm font-sans">
-              <thead><tr className="border-b border-foreground text-xs uppercase tracking-wider text-muted-foreground"><th className="py-2 text-left">Description</th><th className="py-2 text-right">Amount</th></tr></thead>
-              <tbody>{inv.lineItems.map((li, i) => (<tr key={i} className={i % 2 === 1 ? "bg-muted/30" : ""}><td className="py-2">{li.desc}</td><td className="py-2 text-right">{fmt$(li.amount)}</td></tr>))}</tbody>
+              <thead><tr className="border-b border-foreground text-xs uppercase tracking-wider text-muted-foreground"><th className="py-2 text-left">Description</th><th className="py-2 text-right">Qty</th><th className="py-2 text-right">Unit Price</th><th className="py-2 text-right">Total</th></tr></thead>
+              <tbody>{inv.lineItems.map((li, i) => (<tr key={i} className={i % 2 === 1 ? "bg-muted/30" : ""}><td className="py-2">{li.desc}</td><td className="py-2 text-right">{li.qty}</td><td className="py-2 text-right">{fmt$(li.unitPrice)}</td><td className="py-2 text-right">{fmt$(li.amount)}</td></tr>))}</tbody>
             </table>
           </div>
         )}
@@ -110,7 +112,7 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
     <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-3xl">Finances</h1>
-        <Btn onClick={() => { setEditing(null); setModal(true); }}><Plus size={14} className="inline mr-1" /> New Invoice</Btn>
+        <Btn onClick={() => { setEditing(null); setLineItems([{ desc: "", qty: 1, unitPrice: 0 }]); setModal(true); }}><Plus size={14} className="inline mr-1" /> New Invoice</Btn>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
         {[
@@ -198,7 +200,7 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
                     <td className="py-2 pr-4">{shortDate(inv.dueDate)}</td>
                     <td className="py-2" onClick={e => e.stopPropagation()}>
                       {deleting === inv.id ? <ConfirmDelete onConfirm={() => remove(inv.id)} onCancel={() => setDeleting(null)} /> : (
-                        <div className="flex gap-1"><button className="p-1 hover:bg-muted transition-colors" onClick={() => { setEditing(inv); setModal(true); }}><Edit size={14} /></button><button className="p-1 hover:bg-muted transition-colors" onClick={() => setDeleting(inv.id)}><Trash2 size={14} /></button></div>
+                        <div className="flex gap-1"><button className="p-1 hover:bg-muted transition-colors" onClick={() => { setEditing(inv); setLineItems(inv.lineItems.map(li => ({ desc: li.desc, qty: li.qty, unitPrice: li.unitPrice }))); setModal(true); }}><Edit size={14} /></button><button className="p-1 hover:bg-muted transition-colors" onClick={() => setDeleting(inv.id)}><Trash2 size={14} /></button></div>
                       )}
                     </td>
                   </tr>
@@ -208,15 +210,42 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
           </table>
         </div>
       )}
-      <Modal open={modal} onClose={() => { setModal(false); setEditing(null); }} title={editing ? "Edit Invoice" : "New Invoice"}>
+      <Modal open={modal} onClose={() => { setModal(false); setEditing(null); setLineItems([]); }} title={editing ? "Edit Invoice" : "New Invoice"}>
         <form onSubmit={save}>
           <FormSelectLabeled label="Client" name="clientId" options={clients.map(c => ({ value: c.id, label: c.name }))} defaultValue={editing?.clientId} />
           <FormSelectLabeled label="Event" name="eventId" options={events.map(e => ({ value: e.id, label: e.name }))} defaultValue={editing?.eventId} />
-          <FormInput label="Amount" name="amount" type="number" step="0.01" defaultValue={editing?.amount} required />
-          <FormSelect label="Status" name="status" options={["Draft", "Sent", "Paid", "Overdue"]} defaultValue={editing?.status || "Draft"} />
+          <FormSelect label="Status" name="status" options={["Draft", "Quotation", "Sent", "Paid", "Overdue"]} defaultValue={editing?.status || "Draft"} />
           <FormInput label="Due Date" name="dueDate" type="date" defaultValue={editing?.dueDate} />
+
+          {/* Line Items */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">Line Items</label>
+              <button type="button" className="text-xs font-sans underline hover:text-foreground text-muted-foreground" onClick={() => setLineItems(li => [...li, { desc: "", qty: 1, unitPrice: 0 }])}>+ Add Item</button>
+            </div>
+            {lineItems.length > 0 && (
+              <div className="space-y-2">
+                {lineItems.map((li, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <input className="flex-1 border border-foreground bg-background px-2 py-1.5 text-sm font-sans" placeholder="Description" value={li.desc} onChange={e => { const n = [...lineItems]; n[i] = { ...n[i], desc: e.target.value }; setLineItems(n); }} />
+                    <input className="w-16 border border-foreground bg-background px-2 py-1.5 text-sm font-sans text-right" type="number" min="1" placeholder="Qty" value={li.qty} onChange={e => { const n = [...lineItems]; n[i] = { ...n[i], qty: parseInt(e.target.value) || 1 }; setLineItems(n); }} />
+                    <input className="w-24 border border-foreground bg-background px-2 py-1.5 text-sm font-sans text-right" type="number" step="0.01" placeholder="Price" value={li.unitPrice || ""} onChange={e => { const n = [...lineItems]; n[i] = { ...n[i], unitPrice: parseFloat(e.target.value) || 0 }; setLineItems(n); }} />
+                    <span className="w-24 text-sm font-sans text-right py-1.5 text-muted-foreground">{fmt$(li.qty * li.unitPrice)}</span>
+                    <button type="button" className="p-1.5 hover:bg-muted text-muted-foreground" onClick={() => setLineItems(lineItems.filter((_, j) => j !== i))}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <div className="text-right text-sm font-sans font-semibold border-t border-foreground pt-2">
+                  Total: {fmt$(lineItems.reduce((s, li) => s + li.qty * li.unitPrice, 0))}
+                </div>
+              </div>
+            )}
+            {lineItems.length === 0 && (
+              <FormInput label="Amount" name="amount" type="number" step="0.01" defaultValue={editing?.amount} />
+            )}
+          </div>
+
           <FormTextArea label="Notes" name="notes" defaultValue={editing?.notes} />
-          <div className="flex gap-3 mt-4"><Btn type="submit">Save</Btn><Btn variant="secondary" type="button" onClick={() => { setModal(false); setEditing(null); }}>Cancel</Btn></div>
+          <div className="flex gap-3 mt-4"><Btn type="submit">Save</Btn><Btn variant="secondary" type="button" onClick={() => { setModal(false); setEditing(null); setLineItems([]); }}>Cancel</Btn></div>
         </form>
       </Modal>
     </div>

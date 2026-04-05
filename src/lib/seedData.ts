@@ -72,15 +72,15 @@ export const seedVendors = (): Vendor[] => [
 ];
 
 export const seedInvoices = (): Invoice[] => [
-  { id: "inv-001", clientId: CLIENT_IDS.tariro, eventId: EVENT_IDS.moyoGala, amount: 45000, status: "Sent", dueDate: "2026-05-01", notes: "", lineItems: [{ desc: "Event planning fee", amount: 25000 }, { desc: "Vendor coordination", amount: 20000 }] },
-  { id: "inv-002", clientId: CLIENT_IDS.james, eventId: EVENT_IDS.fashionShow, amount: 12000, status: "Paid", dueDate: "2026-04-15", notes: "", lineItems: [{ desc: "Consultation package", amount: 12000 }] },
-  { id: "inv-003", clientId: CLIENT_IDS.rutendo, eventId: EVENT_IDS.chigumbaWed, amount: 8500, status: "Draft", dueDate: "2026-06-01", notes: "", lineItems: [{ desc: "Day-of coordination", amount: 8500 }] },
-  { id: "inv-004", clientId: CLIENT_IDS.tariro, eventId: EVENT_IDS.charityAuction, amount: 3200, status: "Overdue", dueDate: "2026-03-15", notes: "Follow up needed", lineItems: [{ desc: "Venue scouting", amount: 3200 }] },
-  { id: "inv-005", clientId: CLIENT_IDS.tariro, eventId: EVENT_IDS.charityAuction, amount: 28000, status: "Paid", dueDate: "2026-02-20", notes: "", lineItems: [{ desc: "Full event management", amount: 20000 }, { desc: "Design & decor", amount: 8000 }] },
-  { id: "inv-006", clientId: CLIENT_IDS.sophie, eventId: EVENT_IDS.lancasterAnniv, amount: 15000, status: "Sent", dueDate: "2026-07-01", notes: "", lineItems: [{ desc: "Anniversary planning", amount: 15000 }] },
-  { id: "inv-007", clientId: CLIENT_IDS.nyasha, eventId: EVENT_IDS.garweBirthday, amount: 6500, status: "Paid", dueDate: "2026-03-01", notes: "", lineItems: [{ desc: "Consultation & concept", amount: 6500 }] },
-  { id: "inv-008", clientId: CLIENT_IDS.rutendo, eventId: EVENT_IDS.corpRetreat, amount: 22000, status: "Draft", dueDate: "2026-08-15", notes: "", lineItems: [{ desc: "Retreat coordination", amount: 15000 }, { desc: "Activities planning", amount: 7000 }] },
-  { id: "inv-009", clientId: CLIENT_IDS.tendai, eventId: EVENT_IDS.ndlovuLaunch, amount: 18500, status: "Sent", dueDate: "2026-06-15", notes: "", lineItems: [{ desc: "Launch event management", amount: 12000 }, { desc: "AV coordination", amount: 6500 }] },
+  { id: "inv-001", clientId: CLIENT_IDS.tariro, eventId: EVENT_IDS.moyoGala, amount: 45000, status: "Sent", dueDate: "2026-05-01", notes: "", lineItems: [{ desc: "Event planning fee", qty: 1, unitPrice: 25000, amount: 25000 }, { desc: "Vendor coordination", qty: 1, unitPrice: 20000, amount: 20000 }] },
+  { id: "inv-002", clientId: CLIENT_IDS.james, eventId: EVENT_IDS.fashionShow, amount: 12000, status: "Paid", dueDate: "2026-04-15", notes: "", lineItems: [{ desc: "Consultation package", qty: 1, unitPrice: 12000, amount: 12000 }] },
+  { id: "inv-003", clientId: CLIENT_IDS.rutendo, eventId: EVENT_IDS.chigumbaWed, amount: 8500, status: "Draft", dueDate: "2026-06-01", notes: "", lineItems: [{ desc: "Day-of coordination", qty: 1, unitPrice: 8500, amount: 8500 }] },
+  { id: "inv-004", clientId: CLIENT_IDS.tariro, eventId: EVENT_IDS.charityAuction, amount: 3200, status: "Overdue", dueDate: "2026-03-15", notes: "Follow up needed", lineItems: [{ desc: "Venue scouting", qty: 1, unitPrice: 3200, amount: 3200 }] },
+  { id: "inv-005", clientId: CLIENT_IDS.tariro, eventId: EVENT_IDS.charityAuction, amount: 28000, status: "Paid", dueDate: "2026-02-20", notes: "", lineItems: [{ desc: "Full event management", qty: 1, unitPrice: 20000, amount: 20000 }, { desc: "Design & decor", qty: 2, unitPrice: 4000, amount: 8000 }] },
+  { id: "inv-006", clientId: CLIENT_IDS.sophie, eventId: EVENT_IDS.lancasterAnniv, amount: 15000, status: "Sent", dueDate: "2026-07-01", notes: "", lineItems: [{ desc: "Anniversary planning", qty: 1, unitPrice: 15000, amount: 15000 }] },
+  { id: "inv-007", clientId: CLIENT_IDS.nyasha, eventId: EVENT_IDS.garweBirthday, amount: 6500, status: "Paid", dueDate: "2026-03-01", notes: "", lineItems: [{ desc: "Consultation & concept", qty: 1, unitPrice: 6500, amount: 6500 }] },
+  { id: "inv-008", clientId: CLIENT_IDS.rutendo, eventId: EVENT_IDS.corpRetreat, amount: 22000, status: "Draft", dueDate: "2026-08-15", notes: "", lineItems: [{ desc: "Retreat coordination", qty: 1, unitPrice: 15000, amount: 15000 }, { desc: "Activities planning", qty: 1, unitPrice: 7000, amount: 7000 }] },
+  { id: "inv-009", clientId: CLIENT_IDS.tendai, eventId: EVENT_IDS.ndlovuLaunch, amount: 18500, status: "Sent", dueDate: "2026-06-15", notes: "", lineItems: [{ desc: "Launch event management", qty: 1, unitPrice: 12000, amount: 12000 }, { desc: "AV coordination", qty: 1, unitPrice: 6500, amount: 6500 }] },
 ];
 
 export const seedGuests = (): Guest[] => [

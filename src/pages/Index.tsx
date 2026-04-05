@@ -29,7 +29,7 @@ import { TasksView } from "@/views/TasksView";
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════
 const Revouxaynce = () => {
-  const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v4", seedTeam);
+  const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v5", seedTeam);
   const [currentUser, setCurrentUser] = useState<TeamMember | null>(() => {
     try { const s = localStorage.getItem("currentUser"); return s ? JSON.parse(s) : null; } catch { return null; }
   });
@@ -67,17 +67,17 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sampleDataEnabled, setSampleDataEnabled] = useLocalStorage("sampleDataEnabled_v4", () => true);
-  const [events, setEvents] = useLocalStorage("events_v4", seedEvents);
-  const [clients, setClients] = useLocalStorage("clients_v4", seedClients);
-  const [vendors, setVendors] = useLocalStorage("vendors_v4", seedVendors);
-  const [invoices, setInvoices] = useLocalStorage("invoices_v4", seedInvoices);
-  const [guests, setGuests] = useLocalStorage("guests_v4", seedGuests);
-  const [expenses, setExpenses] = useLocalStorage("expenses_v4", seedExpenses);
-  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v4", () => []);
-  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v4", () => []);
-  const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v4", () => []);
-  const [tasks, setTasks] = useLocalStorage<Task[]>("tasks_v4", seedTasks);
+  const [sampleDataEnabled, setSampleDataEnabled] = useLocalStorage("sampleDataEnabled_v5", () => true);
+  const [events, setEvents] = useLocalStorage("events_v5", seedEvents);
+  const [clients, setClients] = useLocalStorage("clients_v5", seedClients);
+  const [vendors, setVendors] = useLocalStorage("vendors_v5", seedVendors);
+  const [invoices, setInvoices] = useLocalStorage("invoices_v5", seedInvoices);
+  const [guests, setGuests] = useLocalStorage("guests_v5", seedGuests);
+  const [expenses, setExpenses] = useLocalStorage("expenses_v5", seedExpenses);
+  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v5", () => []);
+  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v5", () => []);
+  const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v5", () => []);
+  const [tasks, setTasks] = useLocalStorage<Task[]>("tasks_v5", seedTasks);
   const toast = React.useContext(ToastCtx);
   const [transitioning, setTransitioning] = useState(false);
 
