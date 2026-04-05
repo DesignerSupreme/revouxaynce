@@ -9,7 +9,7 @@ import { uid } from "@/lib/helpers";
 import { markOverdueInvoices } from "@/lib/dataService";
 import {
   seedEvents, seedClients, seedVendors, seedInvoices,
-  seedGuests, seedExpenses, seedTeam,
+  seedGuests, seedExpenses, seedTeam, seedTasks,
 } from "@/lib/seedData";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ToastProvider, ToastCtx } from "@/components/app/Toast";
@@ -29,7 +29,7 @@ import { TasksView } from "@/views/TasksView";
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════
 const Revouxaynce = () => {
-  const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v3", seedTeam);
+  const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v4", seedTeam);
   const [currentUser, setCurrentUser] = useState<TeamMember | null>(() => {
     try { const s = localStorage.getItem("currentUser"); return s ? JSON.parse(s) : null; } catch { return null; }
   });
@@ -67,17 +67,17 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sampleDataEnabled, setSampleDataEnabled] = useLocalStorage("sampleDataEnabled_v3", () => true);
-  const [events, setEvents] = useLocalStorage("events_v3", seedEvents);
-  const [clients, setClients] = useLocalStorage("clients_v3", seedClients);
-  const [vendors, setVendors] = useLocalStorage("vendors_v3", seedVendors);
-  const [invoices, setInvoices] = useLocalStorage("invoices_v3", seedInvoices);
-  const [guests, setGuests] = useLocalStorage("guests_v3", seedGuests);
-  const [expenses, setExpenses] = useLocalStorage("expenses_v3", seedExpenses);
-  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v3", () => []);
-  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v3", () => []);
-  const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v3", () => []);
-  const [tasks, setTasks] = useLocalStorage<Task[]>("tasks_v3", () => []);
+  const [sampleDataEnabled, setSampleDataEnabled] = useLocalStorage("sampleDataEnabled_v4", () => true);
+  const [events, setEvents] = useLocalStorage("events_v4", seedEvents);
+  const [clients, setClients] = useLocalStorage("clients_v4", seedClients);
+  const [vendors, setVendors] = useLocalStorage("vendors_v4", seedVendors);
+  const [invoices, setInvoices] = useLocalStorage("invoices_v4", seedInvoices);
+  const [guests, setGuests] = useLocalStorage("guests_v4", seedGuests);
+  const [expenses, setExpenses] = useLocalStorage("expenses_v4", seedExpenses);
+  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v4", () => []);
+  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v4", () => []);
+  const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v4", () => []);
+  const [tasks, setTasks] = useLocalStorage<Task[]>("tasks_v4", seedTasks);
   const toast = React.useContext(ToastCtx);
   const [transitioning, setTransitioning] = useState(false);
 
