@@ -164,6 +164,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          billing_type: string | null
           client_id: string | null
           created_at: string
           discount_amount: number | null
@@ -173,12 +174,16 @@ export type Database = {
           event_id: string | null
           id: string
           last_sent_at: string | null
+          milestones: Json | null
           notes: string | null
+          parent_id: string | null
           status: string
           tax_rate: number | null
           updated_at: string
+          version: number | null
         }
         Insert: {
+          billing_type?: string | null
           client_id?: string | null
           created_at?: string
           discount_amount?: number | null
@@ -188,12 +193,16 @@ export type Database = {
           event_id?: string | null
           id?: string
           last_sent_at?: string | null
+          milestones?: Json | null
           notes?: string | null
+          parent_id?: string | null
           status?: string
           tax_rate?: number | null
           updated_at?: string
+          version?: number | null
         }
         Update: {
+          billing_type?: string | null
           client_id?: string | null
           created_at?: string
           discount_amount?: number | null
@@ -203,10 +212,13 @@ export type Database = {
           event_id?: string | null
           id?: string
           last_sent_at?: string | null
+          milestones?: Json | null
           notes?: string | null
+          parent_id?: string | null
           status?: string
           tax_rate?: number | null
           updated_at?: string
+          version?: number | null
         }
         Relationships: [
           {
@@ -221,6 +233,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]

@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
 import type { Invoice, Client, Event, BrandSettings } from "@/types";
-import { calcInvoiceTotals } from "@/types";
+import { calcInvoiceTotals, calcMilestoneAmount } from "@/types";
 import { fmt$ } from "./helpers";
 
 function svgToDataUrl(svgText: string, width: number, height: number): Promise<string> {
@@ -62,6 +62,13 @@ export async function generateInvoicePDF(
   doc.text(isQuotation ? "QUOTATION" : "INVOICE", pageW - margin, margin + 6, { align: "right" });
   doc.setTextColor(0);
 
+  // Version badge
+  if ((invoice.version || 1) > 1) {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(130);
+    doc.text(`v${invoice.version}`, pageW - margin, margin + 14, { align: "right" });
+    doc.setTextColor(0);
+  }
+
   y += 10;
   doc.setDrawColor(220); doc.setLineWidth(0.5);
   doc.line(margin, y, pageW - margin, y); y += 10;
@@ -85,6 +92,7 @@ export async function generateInvoicePDF(
     ["DUE DATE", invoice.dueDate ? new Date(invoice.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "—"],
   ];
   if (event) metaItems.push(["EVENT", event.name]);
+  if (invoice.billingType === "milestone") metaItems.push(["BILLING", "Milestone"]);
 
   for (const [label, val] of metaItems) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(130);
@@ -143,6 +151,28 @@ export async function generateInvoicePDF(
   else if (invoice.status === "Overdue") { doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(200, 60, 60); doc.text("OVERDUE", totalsValX, y, { align: "right" }); }
   doc.setTextColor(0); y += 14;
 
+  // ─── MILESTONE BREAKDOWN ─────────────────────────────────
+  if (invoice.billingType === "milestone" && invoice.milestones && invoice.milestones.length > 0) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(130);
+    doc.text("PAYMENT MILESTONES", margin, y); doc.setTextColor(0); y += 5;
+
+    autoTable(doc, {
+      startY: y, margin: { left: margin, right: margin },
+      head: [["Milestone", "%", "Amount", "Due Date", "Status"]],
+      body: invoice.milestones.map((ms) => [
+        ms.label, `${ms.percentage}%`, fmt$(calcMilestoneAmount(totals.grandTotal, ms)),
+        ms.dueDate ? new Date(ms.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
+        ms.status,
+      ]),
+      theme: "plain",
+      styles: { font: "helvetica", fontSize: 8, cellPadding: { top: 3, bottom: 3, left: 3, right: 3 }, textColor: [50, 50, 50] },
+      headStyles: { fillColor: [245, 245, 245], textColor: [100, 100, 100], fontSize: 7, fontStyle: "bold" },
+      columnStyles: { 0: { cellWidth: "auto" }, 1: { cellWidth: 15, halign: "center" }, 2: { cellWidth: 28, halign: "right" }, 3: { cellWidth: 28, halign: "center" }, 4: { cellWidth: 22, halign: "center" } },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
   // ─── NOTES ───────────────────────────────────────────────
   if (invoice.notes) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(130); doc.text("NOTES", margin, y); doc.setTextColor(0); y += 5;
@@ -151,7 +181,6 @@ export async function generateInvoicePDF(
     doc.text(noteLines, margin, y); y += noteLines.length * 4 + 8; doc.setTextColor(0);
   }
 
-  // ─── TERMS ───────────────────────────────────────────────
   if (brand?.terms_and_conditions) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(130); doc.text("TERMS & CONDITIONS", margin, y); doc.setTextColor(0); y += 5;
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(100);
