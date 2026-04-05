@@ -3,7 +3,31 @@ import autoTable from "jspdf-autotable";
 import type { Invoice, Client, Event } from "@/types";
 import { fmt$ } from "./helpers";
 
-export function generateInvoicePDF(
+function svgToDataUrl(svgText: string, width: number, height: number): Promise<string> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+    const dpr = 2;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+    const img = new Image();
+    const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve("");
+    };
+    img.src = url;
+  });
+}
+
+export async function generateInvoicePDF(
   invoice: Invoice,
   client: Client | undefined,
   event: Event | undefined
@@ -14,26 +38,40 @@ export function generateInvoicePDF(
   const contentW = pageW - margin * 2;
   let y = margin;
 
-  // ─── HEADER ───────────────────────────────────────────────
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("REVOUXAYNCE", margin, y + 6);
+  // ─── HEADER with LOGO ────────────────────────────────────
+  try {
+    const resp = await fetch("/images/revouxaynce-logo.svg");
+    const svgText = await resp.text();
+    const logoDataUrl = await svgToDataUrl(svgText, 427, 153);
+    if (logoDataUrl) {
+      const logoH = 12;
+      const logoW = logoH * (427 / 153);
+      doc.addImage(logoDataUrl, "PNG", margin, y - 2, logoW, logoH);
+      y += logoH + 2;
+    }
+  } catch {
+    // Fallback to text
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text("REVOUXAYNCE", margin, y + 6);
+    y += 12;
+  }
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100);
-  doc.text("Premium Event Management", margin, y + 12);
-  doc.text("hello@revouxaynce.com  |  +263 77 200 1001", margin, y + 16);
+  doc.text("Premium Event Management", margin, y);
+  doc.text("hello@revouxaynce.com  |  +263 77 200 1001", margin, y + 4);
   doc.setTextColor(0);
 
   // Invoice title (right-aligned)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
   doc.setTextColor(180);
-  doc.text("INVOICE", pageW - margin, y + 6, { align: "right" });
+  doc.text("INVOICE", pageW - margin, margin + 6, { align: "right" });
   doc.setTextColor(0);
 
-  y += 24;
+  y += 10;
 
   // Divider
   doc.setDrawColor(220);
