@@ -104,7 +104,17 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
 
   useEffect(() => { if (error) toast(`Failed to load invoices: ${error}`); }, [error, toast]);
   useEffect(() => { if (!loading) markOverdue(); /* eslint-disable-next-line */ }, [loading]);
-  useEffect(() => { if (detail) { fetchLogs(detail); setShowAudit(false); setShowRevisions(false); } }, [detail, fetchLogs]);
+  useEffect(() => {
+    if (detail) {
+      fetchLogs(detail);
+      setShowAudit(false);
+      setShowRevisions(false);
+      setShowComments(false);
+      setNewComment("");
+      const inv = invoices.find(i => i.id === detail);
+      if (inv) { setInternalNotes(inv.internalNotes || ""); setAssignedTo(inv.assignedTo || ""); }
+    }
+  }, [detail, fetchLogs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter out old revisions from main list — only show latest version
   const latestInvoices = useMemo(() => {
