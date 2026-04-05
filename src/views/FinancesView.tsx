@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote } from "lucide-react";
 import type { Expense, BudgetItem, Invoice, Client, Event, Milestone, MilestoneStatus } from "@/types";
 import { calcInvoiceTotals, calcMilestoneAmount } from "@/types";
 import { fmt$, fmtDate, shortDate, invoicesToCsv } from "@/lib/helpers";
@@ -17,6 +17,8 @@ import { useSupabaseClients, type DbClient } from "@/hooks/useSupabaseClients";
 import { useSupabaseEvents, type DbEvent } from "@/hooks/useSupabaseEvents";
 import { useAuditLogs } from "@/hooks/useAuditLogs";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useInvoiceComments } from "@/hooks/useInvoiceComments";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FinancesViewProps {
   expenses: Expense[];
@@ -45,6 +47,8 @@ function toInvoice(inv: InvoiceWithLineItems): Invoice {
     milestones: Array.isArray(inv.milestones) ? (inv.milestones as unknown as Milestone[]) : [],
     version: inv.version || 1,
     parentId: inv.parent_id || null,
+    internalNotes: (inv as any).internal_notes || "",
+    assignedTo: (inv as any).assigned_to || "",
   };
 }
 
