@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote } from "lucide-react";
 import type { Expense, BudgetItem, Invoice, Client, Event, Milestone, MilestoneStatus } from "@/types";
 import { calcInvoiceTotals, calcMilestoneAmount } from "@/types";
 import { fmt$, fmtDate, shortDate, invoicesToCsv } from "@/lib/helpers";
@@ -17,6 +17,8 @@ import { useSupabaseClients, type DbClient } from "@/hooks/useSupabaseClients";
 import { useSupabaseEvents, type DbEvent } from "@/hooks/useSupabaseEvents";
 import { useAuditLogs } from "@/hooks/useAuditLogs";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useInvoiceComments } from "@/hooks/useInvoiceComments";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FinancesViewProps {
   expenses: Expense[];
@@ -45,6 +47,8 @@ function toInvoice(inv: InvoiceWithLineItems): Invoice {
     milestones: Array.isArray(inv.milestones) ? (inv.milestones as unknown as Milestone[]) : [],
     version: inv.version || 1,
     parentId: inv.parent_id || null,
+    internalNotes: (inv as any).internal_notes || "",
+    assignedTo: (inv as any).assigned_to || "",
   };
 }
 
@@ -76,6 +80,22 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   const [showRevisions, setShowRevisions] = useState(false);
   const [billingType, setBillingType] = useState<"single" | "milestone">("single");
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [showComments, setShowComments] = useState(false);
+
+  // Internal notes debounced save
+  const [internalNotes, setInternalNotes] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInternalFields = useCallback((id: string, fields: Record<string, string>) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      await supabase.from("invoices").update(fields).eq("id", id);
+    }, 800);
+  }, []);
+
+  // Comments hook
+  const { comments, loading: commentsLoading, addComment, deleteComment } = useInvoiceComments(detail);
+  const [newComment, setNewComment] = useState("");
 
   // Filters
   const [filterStatus, setFilterStatus] = useState("");
@@ -84,7 +104,17 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
 
   useEffect(() => { if (error) toast(`Failed to load invoices: ${error}`); }, [error, toast]);
   useEffect(() => { if (!loading) markOverdue(); /* eslint-disable-next-line */ }, [loading]);
-  useEffect(() => { if (detail) { fetchLogs(detail); setShowAudit(false); setShowRevisions(false); } }, [detail, fetchLogs]);
+  useEffect(() => {
+    if (detail) {
+      fetchLogs(detail);
+      setShowAudit(false);
+      setShowRevisions(false);
+      setShowComments(false);
+      setNewComment("");
+      const inv = invoices.find(i => i.id === detail);
+      if (inv) { setInternalNotes(inv.internalNotes || ""); setAssignedTo(inv.assignedTo || ""); }
+    }
+  }, [detail, fetchLogs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter out old revisions from main list — only show latest version
   const latestInvoices = useMemo(() => {
@@ -366,6 +396,77 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
             </div>
           )}
         </div>
+
+        {/* Internal Notes & Assignment (admin only — not visible to clients) */}
+        <div className="mt-6 border border-foreground p-4">
+          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-sans mb-3 flex items-center gap-2"><StickyNote size={14} /> Internal Notes & Assignment</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="text-xs font-sans uppercase tracking-wider text-muted-foreground block mb-1">Internal Notes</label>
+              <textarea
+                className="w-full border border-foreground bg-background px-2 py-1.5 text-sm font-sans min-h-[60px]"
+                placeholder="Team-only notes (not visible to clients)…"
+                value={internalNotes}
+                onChange={(e) => { setInternalNotes(e.target.value); saveInternalFields(inv.id, { internal_notes: e.target.value, assigned_to: assignedTo }); }}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-sans uppercase tracking-wider text-muted-foreground block mb-1">Assigned To</label>
+              <div className="flex items-center gap-2">
+                <User size={14} className="text-muted-foreground" />
+                <input
+                  className="flex-1 border border-foreground bg-background px-2 py-1.5 text-sm font-sans"
+                  placeholder="Name or email"
+                  value={assignedTo}
+                  onChange={(e) => { setAssignedTo(e.target.value); saveInternalFields(inv.id, { internal_notes: internalNotes, assigned_to: e.target.value }); }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Comment Thread */}
+        <div className="mt-6 border-t border-input pt-4">
+          <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-2 text-xs font-sans uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+            {showComments ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <MessageSquare size={14} /> Team Discussion ({comments.length})
+          </button>
+          {showComments && (
+            <div className="mt-3 animate-fade-in">
+              {commentsLoading ? <p className="text-xs text-muted-foreground font-sans">Loading…</p> : (
+                <div className="space-y-3 mb-3">
+                  {comments.length === 0 && <p className="text-xs text-muted-foreground font-sans">No comments yet. Start a discussion.</p>}
+                  {comments.map((c) => (
+                    <div key={c.id} className="flex items-start gap-2 text-xs font-sans group">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold uppercase">{c.author.charAt(0)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{c.author}</span>
+                          <span className="text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                          <button onClick={async () => { try { await deleteComment(c.id); } catch (err: any) { toast(`Error: ${err.message}`); } }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all ml-auto"><Trash2 size={10} /></button>
+                        </div>
+                        <p className="mt-0.5">{c.body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 border border-foreground bg-background px-2 py-1.5 text-sm font-sans"
+                  placeholder="Add a comment…"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={async (e) => { if (e.key === "Enter" && newComment.trim()) { try { await addComment(newComment); setNewComment(""); } catch (err: any) { toast(`Error: ${err.message}`); } } }}
+                />
+                <button
+                  onClick={async () => { if (newComment.trim()) { try { await addComment(newComment); setNewComment(""); } catch (err: any) { toast(`Error: ${err.message}`); } } }}
+                  className="px-3 py-1.5 text-xs font-sans uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90 transition-all"
+                >Post</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -465,7 +566,7 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
           <table className="w-full text-sm font-sans min-w-[750px]">
             <thead><tr className="border-b border-foreground text-left text-xs uppercase tracking-wider text-muted-foreground">
               <th className="py-2 pl-4 sm:pl-0 w-8"><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="accent-foreground" /></th>
-              <th className="py-2 pr-4">Client</th><th className="py-2 pr-4">Event</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Status</th><th className="py-2 pr-2">Type</th><th className="py-2 pr-4">Due</th><th className="py-2 w-20"></th>
+              <th className="py-2 pr-4">Client</th><th className="py-2 pr-4">Event</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Status</th><th className="py-2 pr-2">Type</th><th className="py-2 pr-2">Assigned</th><th className="py-2 pr-4">Due</th><th className="py-2 w-20"></th>
             </tr></thead>
             <tbody>
               {filtered.map((inv, i) => {
@@ -483,6 +584,13 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
                         {inv.billingType === "milestone" ? "MS" : ""}
                         {(inv.version || 1) > 1 ? ` v${inv.version}` : ""}
                       </span>
+                    </td>
+                    <td className="py-2 pr-2">
+                      {inv.assignedTo && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-sans text-muted-foreground border border-input px-1.5 py-0.5">
+                          <User size={9} /> {inv.assignedTo.split("@")[0]}
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 pr-4">{shortDate(inv.dueDate)}</td>
                     <td className="py-2" onClick={e => e.stopPropagation()}>

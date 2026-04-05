@@ -80,6 +80,8 @@ export interface Invoice {
   milestones?: Milestone[];
   version?: number;
   parentId?: string | null;
+  internalNotes?: string;
+  assignedTo?: string;
 }
 
 export interface Guest {

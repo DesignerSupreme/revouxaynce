@@ -162,8 +162,41 @@ export type Database = {
           },
         ]
       }
+      invoice_comments: {
+        Row: {
+          author: string
+          body: string
+          created_at: string
+          id: string
+          invoice_id: string
+        }
+        Insert: {
+          author?: string
+          body: string
+          created_at?: string
+          id?: string
+          invoice_id: string
+        }
+        Update: {
+          author?: string
+          body?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_comments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
+          assigned_to: string | null
           billing_type: string | null
           client_id: string | null
           created_at: string
@@ -173,16 +206,19 @@ export type Database = {
           due_date: string
           event_id: string | null
           id: string
+          internal_notes: string | null
           last_sent_at: string | null
           milestones: Json | null
           notes: string | null
           parent_id: string | null
+          reminder_sent_at: string | null
           status: string
           tax_rate: number | null
           updated_at: string
           version: number | null
         }
         Insert: {
+          assigned_to?: string | null
           billing_type?: string | null
           client_id?: string | null
           created_at?: string
@@ -192,16 +228,19 @@ export type Database = {
           due_date: string
           event_id?: string | null
           id?: string
+          internal_notes?: string | null
           last_sent_at?: string | null
           milestones?: Json | null
           notes?: string | null
           parent_id?: string | null
+          reminder_sent_at?: string | null
           status?: string
           tax_rate?: number | null
           updated_at?: string
           version?: number | null
         }
         Update: {
+          assigned_to?: string | null
           billing_type?: string | null
           client_id?: string | null
           created_at?: string
@@ -211,10 +250,12 @@ export type Database = {
           due_date?: string
           event_id?: string | null
           id?: string
+          internal_notes?: string | null
           last_sent_at?: string | null
           milestones?: Json | null
           notes?: string | null
           parent_id?: string | null
+          reminder_sent_at?: string | null
           status?: string
           tax_rate?: number | null
           updated_at?: string
