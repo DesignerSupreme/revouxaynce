@@ -14,7 +14,181 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          created_at: string
+          email: string
+          event_type: string | null
+          id: string
+          name: string
+          notes: Json | null
+          phone: string | null
+          portal_token: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          event_type?: string | null
+          id?: string
+          name: string
+          notes?: Json | null
+          phone?: string | null
+          portal_token?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          event_type?: string | null
+          id?: string
+          name?: string
+          notes?: Json | null
+          phone?: string | null
+          portal_token?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          date: string
+          id: string
+          name: string
+          notes: string | null
+          status: string | null
+          time: string | null
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+          notes?: string | null
+          status?: string | null
+          time?: string | null
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          status?: string | null
+          time?: string | null
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          discount_amount: number | null
+          due_date: string
+          event_id: string | null
+          id: string
+          notes: string | null
+          status: string
+          tax_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          discount_amount?: number | null
+          due_date: string
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          tax_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          discount_amount?: number | null
+          due_date?: string
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          tax_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      line_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          quantity?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
