@@ -200,7 +200,7 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
                     <td className="py-2 pr-4">{shortDate(inv.dueDate)}</td>
                     <td className="py-2" onClick={e => e.stopPropagation()}>
                       {deleting === inv.id ? <ConfirmDelete onConfirm={() => remove(inv.id)} onCancel={() => setDeleting(null)} /> : (
-                        <div className="flex gap-1"><button className="p-1 hover:bg-muted transition-colors" onClick={() => { setEditing(inv); setModal(true); }}><Edit size={14} /></button><button className="p-1 hover:bg-muted transition-colors" onClick={() => setDeleting(inv.id)}><Trash2 size={14} /></button></div>
+                        <div className="flex gap-1"><button className="p-1 hover:bg-muted transition-colors" onClick={() => { setEditing(inv); setLineItems(inv.lineItems.map(li => ({ desc: li.desc, qty: li.qty, unitPrice: li.unitPrice }))); setModal(true); }}><Edit size={14} /></button><button className="p-1 hover:bg-muted transition-colors" onClick={() => setDeleting(inv.id)}><Trash2 size={14} /></button></div>
                       )}
                     </td>
                   </tr>
