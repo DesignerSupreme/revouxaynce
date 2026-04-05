@@ -51,6 +51,17 @@ export interface Vendor {
   eventIds: string[];
 }
 
+// ─── Milestone Billing ────────────────────────────────────────────
+export type MilestoneStatus = "Pending" | "Approved" | "Invoiced" | "Overdue";
+
+export interface Milestone {
+  label: string;
+  percentage: number;
+  dueDate: string;
+  status: MilestoneStatus;
+  notes: string;
+}
+
 export interface Invoice {
   id: string;
   clientId: string;
@@ -65,6 +76,10 @@ export interface Invoice {
   discountValue?: number;
   discountAmount?: number;
   lastSentAt?: string;
+  billingType?: "single" | "milestone";
+  milestones?: Milestone[];
+  version?: number;
+  parentId?: string | null;
 }
 
 export interface Guest {
@@ -152,4 +167,8 @@ export function calcInvoiceTotals(
   const tax = afterDiscount * (taxRate / 100);
   const grandTotal = afterDiscount + tax;
   return { subtotal, discount, afterDiscount, tax, grandTotal };
+}
+
+export function calcMilestoneAmount(grandTotal: number, milestone: Milestone): number {
+  return grandTotal * (milestone.percentage / 100);
 }
