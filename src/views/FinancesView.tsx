@@ -396,6 +396,77 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
             </div>
           )}
         </div>
+
+        {/* Internal Notes & Assignment (admin only — not visible to clients) */}
+        <div className="mt-6 border border-foreground p-4">
+          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-sans mb-3 flex items-center gap-2"><StickyNote size={14} /> Internal Notes & Assignment</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="text-xs font-sans uppercase tracking-wider text-muted-foreground block mb-1">Internal Notes</label>
+              <textarea
+                className="w-full border border-foreground bg-background px-2 py-1.5 text-sm font-sans min-h-[60px]"
+                placeholder="Team-only notes (not visible to clients)…"
+                value={internalNotes}
+                onChange={(e) => { setInternalNotes(e.target.value); saveInternalFields(inv.id, { internal_notes: e.target.value, assigned_to: assignedTo }); }}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-sans uppercase tracking-wider text-muted-foreground block mb-1">Assigned To</label>
+              <div className="flex items-center gap-2">
+                <User size={14} className="text-muted-foreground" />
+                <input
+                  className="flex-1 border border-foreground bg-background px-2 py-1.5 text-sm font-sans"
+                  placeholder="Name or email"
+                  value={assignedTo}
+                  onChange={(e) => { setAssignedTo(e.target.value); saveInternalFields(inv.id, { internal_notes: internalNotes, assigned_to: e.target.value }); }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Comment Thread */}
+        <div className="mt-6 border-t border-input pt-4">
+          <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-2 text-xs font-sans uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+            {showComments ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <MessageSquare size={14} /> Team Discussion ({comments.length})
+          </button>
+          {showComments && (
+            <div className="mt-3 animate-fade-in">
+              {commentsLoading ? <p className="text-xs text-muted-foreground font-sans">Loading…</p> : (
+                <div className="space-y-3 mb-3">
+                  {comments.length === 0 && <p className="text-xs text-muted-foreground font-sans">No comments yet. Start a discussion.</p>}
+                  {comments.map((c) => (
+                    <div key={c.id} className="flex items-start gap-2 text-xs font-sans group">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold uppercase">{c.author.charAt(0)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{c.author}</span>
+                          <span className="text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                          <button onClick={async () => { try { await deleteComment(c.id); } catch (err: any) { toast(`Error: ${err.message}`); } }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all ml-auto"><Trash2 size={10} /></button>
+                        </div>
+                        <p className="mt-0.5">{c.body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 border border-foreground bg-background px-2 py-1.5 text-sm font-sans"
+                  placeholder="Add a comment…"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={async (e) => { if (e.key === "Enter" && newComment.trim()) { try { await addComment(newComment); setNewComment(""); } catch (err: any) { toast(`Error: ${err.message}`); } } }}
+                />
+                <button
+                  onClick={async () => { if (newComment.trim()) { try { await addComment(newComment); setNewComment(""); } catch (err: any) { toast(`Error: ${err.message}`); } } }}
+                  className="px-3 py-1.5 text-xs font-sans uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90 transition-all"
+                >Post</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
