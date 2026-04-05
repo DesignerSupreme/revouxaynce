@@ -108,6 +108,7 @@ export type Database = {
           due_date: string
           event_id: string | null
           id: string
+          last_sent_at: string | null
           notes: string | null
           status: string
           tax_rate: number | null
@@ -120,6 +121,7 @@ export type Database = {
           due_date: string
           event_id?: string | null
           id?: string
+          last_sent_at?: string | null
           notes?: string | null
           status?: string
           tax_rate?: number | null
@@ -132,6 +134,7 @@ export type Database = {
           due_date?: string
           event_id?: string | null
           id?: string
+          last_sent_at?: string | null
           notes?: string | null
           status?: string
           tax_rate?: number | null
@@ -194,7 +197,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      mark_overdue_invoices: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
