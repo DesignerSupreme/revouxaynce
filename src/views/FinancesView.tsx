@@ -80,6 +80,22 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   const [showRevisions, setShowRevisions] = useState(false);
   const [billingType, setBillingType] = useState<"single" | "milestone">("single");
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [showComments, setShowComments] = useState(false);
+
+  // Internal notes debounced save
+  const [internalNotes, setInternalNotes] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInternalFields = useCallback((id: string, fields: Record<string, string>) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      await supabase.from("invoices").update(fields).eq("id", id);
+    }, 800);
+  }, []);
+
+  // Comments hook
+  const { comments, loading: commentsLoading, addComment, deleteComment } = useInvoiceComments(detail);
+  const [newComment, setNewComment] = useState("");
 
   // Filters
   const [filterStatus, setFilterStatus] = useState("");
