@@ -91,6 +91,12 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
     if (error) toast(`Failed to load invoices: ${error}`);
   }, [error, toast]);
 
+  // Auto-mark overdue invoices on load
+  useEffect(() => {
+    if (!loading) markOverdue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   const totalBilled = invoices.reduce((s, i) => s + i.amount, 0);
   const totalPaid = invoices.filter(i => i.status === "Paid").reduce((s, i) => s + i.amount, 0);
   const outstanding = totalBilled - totalPaid;
@@ -185,17 +191,46 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
       <div className="animate-fade-in">
         <button onClick={() => setDetail(null)} className="text-sm text-muted-foreground mb-4 font-sans hover:text-foreground transition-colors">← Back to Finances</button>
         <h1 className="text-3xl mb-2">Invoice</h1><Badge status={inv.status} />
-        <div className="mt-3">
+        {inv.status === "Revision Requested" && inv.notes && (
+          <div className="mt-2 border border-foreground/30 bg-muted/50 p-3 text-sm font-sans">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Client Revision Request</span>
+            <p className="italic">"{inv.notes}"</p>
+          </div>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
           <button onClick={() => generateInvoicePDF(inv, client, event)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-sans uppercase tracking-wider border border-foreground hover:bg-foreground hover:text-background transition-all">
             <Download size={14} /> Download PDF
           </button>
+          {(inv.status === "Sent" || inv.status === "Quotation") && client && (
+            <button
+              onClick={async () => {
+                try {
+                  await sendInvoiceEmail(inv.id, client.email, client.name, inv.amount);
+                  toast(`Invoice sent to ${client.email}`);
+                  log(`Sent invoice to ${client.name}`);
+                } catch (err: any) {
+                  toast(`Error: ${err.message}`);
+                }
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-sans uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90 transition-all"
+            >
+              <Send size={14} /> Send to Client
+            </button>
+          )}
         </div>
+        {inv.lastSentAt && (
+          <p className="text-xs text-muted-foreground font-sans mt-2">
+            Last sent: {new Date(inv.lastSentAt).toLocaleString()}
+          </p>
+        )}
         <div className="mt-6 space-y-2 text-sm font-sans">
           {client && <p><span className="text-muted-foreground">Client:</span> {client.name}</p>}
           {event && <p><span className="text-muted-foreground">Event:</span> {event.name}</p>}
           <p><span className="text-muted-foreground">Amount:</span> {fmt$(inv.amount)}</p>
           <p><span className="text-muted-foreground">Due Date:</span> {fmtDate(inv.dueDate)}</p>
-          {inv.notes && <p><span className="text-muted-foreground">Notes:</span> {inv.notes}</p>}
+          {(inv.taxRate ?? 0) > 0 && <p><span className="text-muted-foreground">Tax Rate:</span> {inv.taxRate}%</p>}
+          {(inv.discountAmount ?? 0) > 0 && <p><span className="text-muted-foreground">Discount:</span> {fmt$(inv.discountAmount!)}</p>}
+          {inv.notes && inv.status !== "Revision Requested" && <p><span className="text-muted-foreground">Notes:</span> {inv.notes}</p>}
         </div>
         {inv.lineItems.length > 0 && (
           <div className="mt-6">
