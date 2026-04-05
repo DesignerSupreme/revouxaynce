@@ -59,7 +59,7 @@ export interface Invoice {
   status: string;
   dueDate: string;
   notes: string;
-  lineItems: { desc: string; amount: number }[];
+  lineItems: { desc: string; qty: number; unitPrice: number; amount: number }[];
 }
 
 export interface Guest {
