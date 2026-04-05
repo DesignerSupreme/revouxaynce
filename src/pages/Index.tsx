@@ -44,21 +44,21 @@ function useLocalStorage<T>(key: string, seed: () => T): [T, React.Dispatch<Reac
 
 // ─── Seed data ────────────────────────────────────────────────────
 const seedEvents = (): Event[] => [
-  { id: uid(), name: "The Laurent Gala", date: "2026-06-14", time: "18:00", venue: "The Grand Ballroom, NYC", clientId: "", status: "Confirmed", notes: "Black-tie, 200 guests" },
-  { id: uid(), name: "Noir Fashion Show", date: "2026-07-22", time: "20:00", venue: "Pier 17 Rooftop", clientId: "", status: "Planning", notes: "Runway + after-party" },
-  { id: uid(), name: "Whitmore Wedding", date: "2026-08-30", time: "16:00", venue: "Château de Lumière", clientId: "", status: "Planning", notes: "Intimate ceremony, 80 guests" },
-  { id: uid(), name: "Annual Charity Auction", date: "2026-05-10", time: "19:00", venue: "Metropolitan Club", clientId: "", status: "Wrapped", notes: "Raised $450k" },
+  { id: uid(), name: "The Moyo Gala", date: "2026-06-14", time: "18:00", venue: "Rainbow Towers, Harare", clientId: "", status: "Confirmed", notes: "Black-tie, 200 guests" },
+  { id: uid(), name: "Noir Fashion Show", date: "2026-07-22", time: "20:00", venue: "Meikles Hotel Rooftop", clientId: "", status: "Planning", notes: "Runway + after-party" },
+  { id: uid(), name: "Chigumba Wedding", date: "2026-08-30", time: "16:00", venue: "Bvumba Botanical Gardens", clientId: "", status: "Planning", notes: "Intimate ceremony, 80 guests" },
+  { id: uid(), name: "Annual Charity Auction", date: "2026-05-10", time: "19:00", venue: "Borrowdale Brooke, Harare", clientId: "", status: "Wrapped", notes: "Raised $450k" },
 ];
 const seedClients = (): Client[] => [
-  { id: uid(), name: "Isabelle Laurent", email: "isabelle@laurent.com", phone: "+1 212-555-0101", eventType: "Gala", status: "Confirmed", notes: [{ text: "Prefers monochrome florals", date: "2026-04-01" }] },
-  { id: uid(), name: "Marcus Whitmore", email: "marcus@whitmore.co", phone: "+1 310-555-0202", eventType: "Wedding", status: "Quoted", notes: [] },
-  { id: uid(), name: "Ava Chen", email: "ava@chen.design", phone: "+1 415-555-0303", eventType: "Corporate", status: "Inquiry", notes: [] },
+  { id: uid(), name: "Tariro Moyo", email: "tariro@moyo.co.zw", phone: "+263 77 200 1001", eventType: "Gala", status: "Confirmed", notes: [{ text: "Prefers monochrome florals", date: "2026-04-01" }] },
+  { id: uid(), name: "James Whitmore", email: "james@whitmore.co.uk", phone: "+44 7700 900202", eventType: "Wedding", status: "Quoted", notes: [] },
+  { id: uid(), name: "Rutendo Chigumba", email: "rutendo@chigumba.co.zw", phone: "+263 71 300 0303", eventType: "Corporate", status: "Inquiry", notes: [] },
 ];
 const seedVendors = (): Vendor[] => [
-  { id: uid(), name: "Maison Fleur", category: "Florals", contact: "hello@maisonfleur.com", rating: 5, notes: "Premium installations", eventIds: [] },
-  { id: uid(), name: "Noir Catering Co.", category: "Catering", contact: "book@noircatering.com", rating: 4, notes: "French cuisine specialist", eventIds: [] },
+  { id: uid(), name: "Ruva Florals", category: "Florals", contact: "hello@ruvaflorals.co.zw", rating: 5, notes: "Premium installations", eventIds: [] },
+  { id: uid(), name: "Kudza Catering", category: "Catering", contact: "book@kudzacatering.co.zw", rating: 4, notes: "Pan-African cuisine specialist", eventIds: [] },
   { id: uid(), name: "Lux AV Systems", category: "AV", contact: "info@luxav.com", rating: 4, notes: "Full production capability", eventIds: [] },
-  { id: uid(), name: "Capture Studio", category: "Photography", contact: "hi@capturestudio.com", rating: 5, notes: "Editorial style", eventIds: [] },
+  { id: uid(), name: "Capture Studio", category: "Photography", contact: "hi@capturestudio.co.zw", rating: 5, notes: "Editorial style", eventIds: [] },
 ];
 const seedInvoices = (): Invoice[] => [
   { id: uid(), clientId: "", eventId: "", amount: 45000, status: "Sent", dueDate: "2026-05-01", notes: "", lineItems: [{ desc: "Event planning fee", amount: 25000 }, { desc: "Vendor coordination", amount: 20000 }] },
@@ -67,15 +67,15 @@ const seedInvoices = (): Invoice[] => [
   { id: uid(), clientId: "", eventId: "", amount: 3200, status: "Overdue", dueDate: "2026-03-15", notes: "Follow up needed", lineItems: [{ desc: "Venue scouting", amount: 3200 }] },
 ];
 const seedGuests = (): Guest[] => [
-  { id: uid(), name: "Eleanor Voss", eventId: "", email: "eleanor@voss.com", phone: "+1 212-555-1001", rsvp: "Attending", dietary: "Vegetarian", tableGroup: "Table 1" },
-  { id: uid(), name: "James Harlow", eventId: "", email: "james@harlow.net", phone: "+1 310-555-1002", rsvp: "Pending", dietary: "", tableGroup: "Table 2" },
-  { id: uid(), name: "Sofia Reyes", eventId: "", email: "sofia@reyes.co", phone: "+1 415-555-1003", rsvp: "Attending", dietary: "Gluten-free", tableGroup: "Table 1" },
-  { id: uid(), name: "David Kim", eventId: "", email: "david@kim.io", phone: "+1 646-555-1004", rsvp: "Declined", dietary: "", tableGroup: "" },
+  { id: uid(), name: "Tatenda Mapfumo", eventId: "", email: "tatenda@mapfumo.co.zw", phone: "+263 77 400 1001", rsvp: "Attending", dietary: "Vegetarian", tableGroup: "Table 1" },
+  { id: uid(), name: "Emily Harlow", eventId: "", email: "emily@harlow.co.uk", phone: "+44 7700 901002", rsvp: "Pending", dietary: "", tableGroup: "Table 2" },
+  { id: uid(), name: "Ruvimbo Nyathi", eventId: "", email: "ruvimbo@nyathi.co.zw", phone: "+263 71 500 1003", rsvp: "Attending", dietary: "Gluten-free", tableGroup: "Table 1" },
+  { id: uid(), name: "David Thompson", eventId: "", email: "david@thompson.co.uk", phone: "+44 7911 123456", rsvp: "Declined", dietary: "", tableGroup: "" },
 ];
 const seedExpenses = (): Expense[] => [
-  { id: uid(), date: "2026-04-02", vendor: "Maison Fleur", category: "Florals", amount: 3200, eventId: "", notes: "Centerpiece arrangements", receiptUrl: "" },
-  { id: uid(), date: "2026-04-03", vendor: "Noir Catering Co.", category: "Catering", amount: 8500, eventId: "", notes: "Tasting session deposit", receiptUrl: "" },
-  { id: uid(), date: "2026-03-28", vendor: "Office Depot", category: "Supplies", amount: 145.50, eventId: "", notes: "Printing & stationery", receiptUrl: "" },
+  { id: uid(), date: "2026-04-02", vendor: "Ruva Florals", category: "Florals", amount: 3200, eventId: "", notes: "Centerpiece arrangements", receiptUrl: "" },
+  { id: uid(), date: "2026-04-03", vendor: "Kudza Catering", category: "Catering", amount: 8500, eventId: "", notes: "Tasting session deposit", receiptUrl: "" },
+  { id: uid(), date: "2026-03-28", vendor: "Harare Office Supplies", category: "Supplies", amount: 145.50, eventId: "", notes: "Printing & stationery", receiptUrl: "" },
 ];
 const seedTeam = (): TeamMember[] => [
   { id: uid(), name: "Chido Nyakanda", email: "nyakandachido@gmail.com", password: "m@n@n@5", role: "admin", access: ["dashboard","events","clients","vendors","finances","expenses","guests","team"] },
