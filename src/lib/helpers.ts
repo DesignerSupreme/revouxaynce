@@ -21,3 +21,13 @@ export const daysUntil = (dateStr: string): number => {
   const target = new Date(dateStr + "T00:00:00");
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 };
+
+export { calcInvoiceTotals } from "@/types";
+
+export function invoicesToCsv(invoices: { id: string; clientName: string; eventName: string; amount: number; status: string; dueDate: string }[]): string {
+  const header = "Invoice ID,Client,Event,Amount,Status,Due Date\n";
+  const rows = invoices.map((i) =>
+    `${i.id.slice(0, 8)},${i.clientName.replace(/,/g, "")},${i.eventName.replace(/,/g, "")},${i.amount},${i.status},${i.dueDate}`
+  ).join("\n");
+  return header + rows;
+}
