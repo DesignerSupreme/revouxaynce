@@ -258,7 +258,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
             {tab === "tasks" && <TasksView tasks={tasks} setTasks={setTasks} events={events} team={team} log={log} toast={toast} />}
             {tab === "clients" && <ClientsView clients={clients} setClients={setClients} events={events} log={log} toast={toast} />}
             {tab === "vendors" && <VendorsView vendors={vendors} setVendors={setVendors} events={events} log={log} toast={toast} />}
-            {tab === "finances" && <FinancesView invoices={invoices} setInvoices={setInvoices} clients={clients} events={events} expenses={expenses} budgets={budgets} log={log} toast={toast} />}
+            {tab === "finances" && <FinancesView expenses={expenses} budgets={budgets} log={log} toast={toast} />}
             {tab === "expenses" && <ExpensesView expenses={expenses} setExpenses={setExpenses} events={events} log={log} toast={toast} />}
             {tab === "guests" && <GuestsView guests={guests} setGuests={setGuests} events={events} log={log} toast={toast} />}
             {tab === "team" && currentUser.role === "admin" && <TeamView team={team} setTeam={setTeam} currentUser={currentUser} toast={toast} log={log} />}
