@@ -60,6 +60,9 @@ export interface Invoice {
   dueDate: string;
   notes: string;
   lineItems: { desc: string; qty: number; unitPrice: number; amount: number }[];
+  taxRate?: number;
+  discountAmount?: number;
+  lastSentAt?: string;
 }
 
 export interface Guest {
