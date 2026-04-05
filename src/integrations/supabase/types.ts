@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          invoice_id: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          invoice_id?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          invoice_id?: string | null
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_settings: {
+        Row: {
+          accent_color: string | null
+          created_at: string
+          footer_text: string | null
+          id: string
+          terms_and_conditions: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          created_at?: string
+          footer_text?: string | null
+          id?: string
+          terms_and_conditions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          created_at?: string
+          footer_text?: string | null
+          id?: string
+          terms_and_conditions?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           created_at: string
@@ -105,6 +167,8 @@ export type Database = {
           client_id: string | null
           created_at: string
           discount_amount: number | null
+          discount_type: string | null
+          discount_value: number | null
           due_date: string
           event_id: string | null
           id: string
@@ -118,6 +182,8 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           discount_amount?: number | null
+          discount_type?: string | null
+          discount_value?: number | null
           due_date: string
           event_id?: string | null
           id?: string
@@ -131,6 +197,8 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           discount_amount?: number | null
+          discount_type?: string | null
+          discount_value?: number | null
           due_date?: string
           event_id?: string | null
           id?: string
