@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download } from "lucide-react";
-import type { Event, Client, Invoice, Expense, BudgetItem } from "@/types";
-import { uid, fmt$, fmtDate, shortDate } from "@/lib/helpers";
+import React, { useState, useEffect } from "react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2 } from "lucide-react";
+import type { Expense, BudgetItem } from "@/types";
+import { fmt$, fmtDate, shortDate } from "@/lib/helpers";
 import { generateInvoicePDF } from "@/lib/invoicePdf";
 import { Modal } from "@/components/app/Modal";
 import { FormInput, FormTextArea, FormSelect, FormSelectLabeled, Btn } from "@/components/app/FormElements";
@@ -11,24 +11,83 @@ import { ConfirmDelete } from "@/components/app/ConfirmDelete";
 import { FadeInUp } from "@/components/app/FadeInUp";
 import { AnimatedNumber } from "@/components/app/AnimatedNumber";
 import { HBarChart, LineChart } from "@/components/app/Charts";
+import { useInvoices, type InvoiceWithLineItems } from "@/hooks/useInvoices";
+import { useSupabaseClients, type DbClient } from "@/hooks/useSupabaseClients";
+import { useSupabaseEvents, type DbEvent } from "@/hooks/useSupabaseEvents";
+import type { Client, Event, Invoice } from "@/types";
 
 interface FinancesViewProps {
-  invoices: Invoice[];
-  setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
-  clients: Client[];
-  events: Event[];
   expenses: Expense[];
   budgets: BudgetItem[];
   log: (text: string) => void;
   toast: (msg: string) => void;
 }
 
-export function FinancesView({ invoices, setInvoices, clients, events, expenses, budgets, log, toast }: FinancesViewProps) {
+/** Adapt DB types to legacy types used by PDF generator etc. */
+function toClient(c: DbClient): Client {
+  return {
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone || "",
+    eventType: c.event_type || "",
+    status: c.status || "Active",
+    notes: Array.isArray(c.notes) ? (c.notes as { text: string; date: string }[]) : [],
+    portalToken: c.portal_token || undefined,
+  };
+}
+
+function toEvent(e: DbEvent): Event {
+  return {
+    id: e.id,
+    name: e.name,
+    date: e.date,
+    time: e.time || "",
+    venue: e.venue || "",
+    clientId: e.client_id || "",
+    status: e.status || "Planning",
+    notes: e.notes || "",
+  };
+}
+
+function toInvoice(inv: InvoiceWithLineItems): Invoice {
+  return {
+    id: inv.id,
+    clientId: inv.client_id || "",
+    eventId: inv.event_id || "",
+    amount: inv.amount,
+    status: inv.status,
+    dueDate: inv.due_date,
+    notes: inv.notes || "",
+    lineItems: inv.line_items.map((li) => ({
+      desc: li.description,
+      qty: li.quantity,
+      unitPrice: Number(li.unit_price),
+      amount: li.quantity * Number(li.unit_price),
+    })),
+  };
+}
+
+export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProps) {
+  const { invoices: dbInvoices, loading, error, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { clients: dbClients, loading: clientsLoading } = useSupabaseClients();
+  const { events: dbEvents, loading: eventsLoading } = useSupabaseEvents();
+
+  const invoices = dbInvoices.map(toInvoice);
+  const clients = dbClients.map(toClient);
+  const events = dbEvents.map(toEvent);
+
   const [modal, setModal] = useState(false);
-  const [editing, setEditing] = useState<Invoice | null>(null);
+  const [editing, setEditing] = useState<InvoiceWithLineItems | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [lineItems, setLineItems] = useState<{ desc: string; qty: number; unitPrice: number }[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (error) toast(`Failed to load invoices: ${error}`);
+  }, [error, toast]);
+
   const totalBilled = invoices.reduce((s, i) => s + i.amount, 0);
   const totalPaid = invoices.filter(i => i.status === "Paid").reduce((s, i) => s + i.amount, 0);
   const outstanding = totalBilled - totalPaid;
@@ -57,22 +116,62 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
     value: (monthlyIncome[m] || 0) - (monthlyExpense[m] || 0)
   }));
 
-  const save = (e: React.FormEvent<HTMLFormElement>) => {
+  const save = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSaving(true);
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
-    const items = lineItems.filter(li => li.desc.trim()).map(li => ({ desc: li.desc, qty: li.qty, unitPrice: li.unitPrice, amount: li.qty * li.unitPrice }));
-    const amount = items.length > 0 ? items.reduce((s, li) => s + li.amount, 0) : (parseFloat(obj.amount) || 0);
-    if (editing) {
-      setInvoices(inv => inv.map(x => x.id === editing.id ? { ...x, clientId: obj.clientId || "", eventId: obj.eventId || "", amount, status: obj.status || "", dueDate: obj.dueDate || "", notes: obj.notes || "", lineItems: items } : x));
-      toast("Invoice updated"); log(`Updated invoice for ${fmt$(amount)}`);
-    } else {
-      setInvoices(inv => [...inv, { id: uid(), clientId: obj.clientId || "", eventId: obj.eventId || "", amount, status: obj.status || "Draft", dueDate: obj.dueDate || "", notes: obj.notes || "", lineItems: items }]);
-      toast("Invoice created"); log(`Created invoice for ${fmt$(amount)}`);
+    const items = lineItems.filter(li => li.desc.trim());
+
+    try {
+      if (editing) {
+        await updateInvoice(editing.id, {
+          client_id: obj.clientId || null,
+          event_id: obj.eventId || null,
+          status: obj.status || "Draft",
+          due_date: obj.dueDate || "",
+          notes: obj.notes || "",
+        }, items);
+        toast("Invoice updated");
+        log(`Updated invoice`);
+      } else {
+        await createInvoice({
+          client_id: obj.clientId || null,
+          event_id: obj.eventId || null,
+          status: obj.status || "Draft",
+          due_date: obj.dueDate || "",
+          notes: obj.notes || "",
+        }, items);
+        toast("Invoice created");
+        log(`Created invoice`);
+      }
+      setModal(false); setEditing(null); setLineItems([]);
+    } catch (err: any) {
+      toast(`Error: ${err.message}`);
+    } finally {
+      setSaving(false);
     }
-    setModal(false); setEditing(null); setLineItems([]);
   };
-  const remove = (id: string) => { setInvoices(inv => inv.filter(x => x.id !== id)); toast("Invoice deleted"); log("Deleted an invoice"); setDeleting(null); };
+
+  const remove = async (id: string) => {
+    try {
+      await deleteInvoice(id);
+      toast("Invoice deleted");
+      log("Deleted an invoice");
+    } catch (err: any) {
+      toast(`Error: ${err.message}`);
+    }
+    setDeleting(null);
+  };
+
+  if (loading || clientsLoading || eventsLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+        <span className="ml-3 text-sm text-muted-foreground font-sans">Loading finances…</span>
+      </div>
+    );
+  }
 
   if (detail) {
     const inv = invoices.find(i => i.id === detail);
@@ -193,6 +292,7 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
               {invoices.map((inv, i) => {
                 const client = clients.find(c => c.id === inv.clientId);
                 const event = events.find(e => e.id === inv.eventId);
+                const dbInv = dbInvoices.find(d => d.id === inv.id);
                 return (
                   <tr key={inv.id} className={`cursor-pointer hover:bg-muted/50 transition-colors ${i % 2 === 1 ? "bg-muted/30" : ""}`} onClick={() => setDetail(inv.id)}>
                     <td className="py-2 pr-4 pl-4 sm:pl-0">{client?.name || "—"}</td><td className="py-2 pr-4">{event?.name || "—"}</td>
@@ -200,7 +300,16 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
                     <td className="py-2 pr-4">{shortDate(inv.dueDate)}</td>
                     <td className="py-2" onClick={e => e.stopPropagation()}>
                       {deleting === inv.id ? <ConfirmDelete onConfirm={() => remove(inv.id)} onCancel={() => setDeleting(null)} /> : (
-                        <div className="flex gap-1"><button className="p-1 hover:bg-muted transition-colors" onClick={() => { setEditing(inv); setLineItems(inv.lineItems.map(li => ({ desc: li.desc, qty: li.qty, unitPrice: li.unitPrice }))); setModal(true); }}><Edit size={14} /></button><button className="p-1 hover:bg-muted transition-colors" onClick={() => setDeleting(inv.id)}><Trash2 size={14} /></button></div>
+                        <div className="flex gap-1">
+                          <button className="p-1 hover:bg-muted transition-colors" onClick={() => {
+                            if (dbInv) {
+                              setEditing(dbInv);
+                              setLineItems(dbInv.line_items.map(li => ({ desc: li.description, qty: li.quantity, unitPrice: Number(li.unit_price) })));
+                            }
+                            setModal(true);
+                          }}><Edit size={14} /></button>
+                          <button className="p-1 hover:bg-muted transition-colors" onClick={() => setDeleting(inv.id)}><Trash2 size={14} /></button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -212,10 +321,10 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
       )}
       <Modal open={modal} onClose={() => { setModal(false); setEditing(null); setLineItems([]); }} title={editing ? "Edit Invoice" : "New Invoice"}>
         <form onSubmit={save}>
-          <FormSelectLabeled label="Client" name="clientId" options={clients.map(c => ({ value: c.id, label: c.name }))} defaultValue={editing?.clientId} />
-          <FormSelectLabeled label="Event" name="eventId" options={events.map(e => ({ value: e.id, label: e.name }))} defaultValue={editing?.eventId} />
+          <FormSelectLabeled label="Client" name="clientId" options={clients.map(c => ({ value: c.id, label: c.name }))} defaultValue={editing?.client_id || undefined} />
+          <FormSelectLabeled label="Event" name="eventId" options={events.map(e => ({ value: e.id, label: e.name }))} defaultValue={editing?.event_id || undefined} />
           <FormSelect label="Status" name="status" options={["Draft", "Quotation", "Sent", "Paid", "Overdue"]} defaultValue={editing?.status || "Draft"} />
-          <FormInput label="Due Date" name="dueDate" type="date" defaultValue={editing?.dueDate} />
+          <FormInput label="Due Date" name="dueDate" type="date" defaultValue={editing?.due_date} />
 
           {/* Line Items */}
           <div className="mt-4">
@@ -240,12 +349,15 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
               </div>
             )}
             {lineItems.length === 0 && (
-              <FormInput label="Amount" name="amount" type="number" step="0.01" defaultValue={editing?.amount} />
+              <p className="text-xs text-muted-foreground font-sans">Click "+ Add Item" to add line items.</p>
             )}
           </div>
 
-          <FormTextArea label="Notes" name="notes" defaultValue={editing?.notes} />
-          <div className="flex gap-3 mt-4"><Btn type="submit">Save</Btn><Btn variant="secondary" type="button" onClick={() => { setModal(false); setEditing(null); setLineItems([]); }}>Cancel</Btn></div>
+          <FormTextArea label="Notes" name="notes" defaultValue={editing?.notes || ""} />
+          <div className="flex gap-3 mt-4">
+            <Btn type="submit" disabled={saving}>{saving ? "Saving…" : "Save"}</Btn>
+            <Btn variant="secondary" type="button" onClick={() => { setModal(false); setEditing(null); setLineItems([]); }}>Cancel</Btn>
+          </div>
         </form>
       </Modal>
     </div>
