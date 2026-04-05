@@ -566,7 +566,7 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
           <table className="w-full text-sm font-sans min-w-[750px]">
             <thead><tr className="border-b border-foreground text-left text-xs uppercase tracking-wider text-muted-foreground">
               <th className="py-2 pl-4 sm:pl-0 w-8"><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="accent-foreground" /></th>
-              <th className="py-2 pr-4">Client</th><th className="py-2 pr-4">Event</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Status</th><th className="py-2 pr-2">Type</th><th className="py-2 pr-4">Due</th><th className="py-2 w-20"></th>
+              <th className="py-2 pr-4">Client</th><th className="py-2 pr-4">Event</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Status</th><th className="py-2 pr-2">Type</th><th className="py-2 pr-2">Assigned</th><th className="py-2 pr-4">Due</th><th className="py-2 w-20"></th>
             </tr></thead>
             <tbody>
               {filtered.map((inv, i) => {
