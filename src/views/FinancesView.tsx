@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download } from "lucide-react";
 import type { Event, Client, Invoice, Expense, BudgetItem } from "@/types";
 import { uid, fmt$, fmtDate, shortDate } from "@/lib/helpers";
+import { generateInvoicePDF } from "@/lib/invoicePdf";
 import { Modal } from "@/components/app/Modal";
 import { FormInput, FormTextArea, FormSelect, FormSelectLabeled, Btn } from "@/components/app/FormElements";
 import { Badge } from "@/components/app/Badge";
