@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Store, DollarSign, UserCheck,
-  LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal
+  LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal, ClipboardList
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
-import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity } from "@/types";
+import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Task } from "@/types";
 import { uid } from "@/lib/helpers";
 import { markOverdueInvoices } from "@/lib/dataService";
 import {
@@ -23,6 +23,7 @@ import { FinancesView } from "@/views/FinancesView";
 import { ExpensesView } from "@/views/ExpensesView";
 import { GuestsView } from "@/views/GuestsView";
 import { TeamView } from "@/views/TeamView";
+import { TasksView } from "@/views/TasksView";
 
 // ═══════════════════════════════════════════════════════════════════
 // MAIN APP
@@ -76,6 +77,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v3", () => []);
   const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v3", () => []);
   const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v3", () => []);
+  const [tasks, setTasks] = useLocalStorage<Task[]>("tasks_v3", () => []);
   const toast = React.useContext(ToastCtx);
   const [transitioning, setTransitioning] = useState(false);
 
@@ -97,16 +99,17 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
     setTimelines([]);
     setBudgets([]);
     setActivities([]);
+    setTasks([]);
     setSampleDataEnabled(true);
     toast("Sample data has been reset");
-  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, setSampleDataEnabled, toast]);
+  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, setTasks, setSampleDataEnabled, toast]);
 
   const clearAllData = useCallback(() => {
     setEvents([]); setClients([]); setVendors([]); setInvoices([]);
     setGuests([]); setExpenses([]); setTimelines([]); setBudgets([]);
-    setActivities([]);
+    setActivities([]); setTasks([]);
     toast("All data cleared");
-  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, toast]);
+  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, setTasks, toast]);
 
   const toggleSampleData = useCallback(() => {
     if (sampleDataEnabled) { clearAllData(); setSampleDataEnabled(false); }
@@ -134,6 +137,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   const allNavItems: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { key: "events", label: "Events", icon: CalendarDays },
+    { key: "tasks", label: "Tasks", icon: ClipboardList },
     { key: "clients", label: "Clients", icon: Users },
     { key: "vendors", label: "Vendors", icon: Store },
     { key: "finances", label: "Finances", icon: DollarSign },
@@ -142,10 +146,10 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
     ...(currentUser.role === "admin" ? [{ key: "team" as Tab, label: "Team", icon: Shield }] : []),
   ];
 
-  const navItems = allNavItems.filter(n => currentUser.access.includes(n.key) || n.key === "team");
+  const navItems = allNavItems.filter(n => currentUser.access.includes(n.key) || n.key === "team" || n.key === "tasks");
 
   const handleNav = (t: Tab) => {
-    if (!currentUser.access.includes(t) && t !== "team") {
+    if (!currentUser.access.includes(t) && t !== "team" && t !== "tasks") {
       toast("You don't have access to this section");
       return;
     }
@@ -158,7 +162,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   };
 
   useEffect(() => {
-    if (!currentUser.access.includes(tab) && tab !== "team") {
+    if (!currentUser.access.includes(tab) && tab !== "team" && tab !== "tasks") {
       const first = navItems[0]?.key || "dashboard";
       setTab(first);
     }
@@ -251,6 +255,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
           <div className={`transition-all duration-150 ${transitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}>
             {tab === "dashboard" && <DashboardView events={events} clients={clients} invoices={invoices} guests={guests} expenses={expenses} activities={activities} vendors={vendors} timelines={timelines} budgets={budgets} setTab={handleNav} />}
             {tab === "events" && <EventsView events={events} setEvents={setEvents} clients={clients} vendors={vendors} guests={guests} setGuests={setGuests} timelines={timelines} setTimelines={setTimelines} budgets={budgets} setBudgets={setBudgets} log={log} toast={toast} />}
+            {tab === "tasks" && <TasksView tasks={tasks} setTasks={setTasks} events={events} team={team} log={log} toast={toast} />}
             {tab === "clients" && <ClientsView clients={clients} setClients={setClients} events={events} log={log} toast={toast} />}
             {tab === "vendors" && <VendorsView vendors={vendors} setVendors={setVendors} events={events} log={log} toast={toast} />}
             {tab === "finances" && <FinancesView invoices={invoices} setInvoices={setInvoices} clients={clients} events={events} expenses={expenses} budgets={budgets} log={log} toast={toast} />}
