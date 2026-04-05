@@ -465,6 +465,11 @@ function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamM
               <div className="text-[10px] text-sidebar-foreground/50 uppercase">{currentUser.role}</div>
             </div>
           </div>
+          {currentUser.role === "admin" && (
+            <button onClick={resetAllData} className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
+              <RotateCcw size={12} /> Reset Sample Data
+            </button>
+          )}
           <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
             <LogOut size={12} /> Sign Out
           </button>
@@ -486,6 +491,11 @@ function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamM
               ))}
             </nav>
             <div className="px-4 py-3 border-t border-sidebar-border">
+              {currentUser.role === "admin" && (
+                <button onClick={resetAllData} className="flex items-center gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground">
+                  <RotateCcw size={12} /> Reset Sample Data
+                </button>
+              )}
               <button onClick={onLogout} className="flex items-center gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground">
                 <LogOut size={12} /> Sign Out
               </button>
