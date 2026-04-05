@@ -112,7 +112,7 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
     <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-3xl">Finances</h1>
-        <Btn onClick={() => { setEditing(null); setModal(true); }}><Plus size={14} className="inline mr-1" /> New Invoice</Btn>
+        <Btn onClick={() => { setEditing(null); setLineItems([{ desc: "", qty: 1, unitPrice: 0 }]); setModal(true); }}><Plus size={14} className="inline mr-1" /> New Invoice</Btn>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
         {[
