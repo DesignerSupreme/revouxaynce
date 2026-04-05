@@ -140,6 +140,8 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
           status: obj.status || "Draft",
           due_date: obj.dueDate || "",
           notes: obj.notes || "",
+          tax_rate: parseFloat(obj.taxRate) || 0,
+          discount_amount: parseFloat(obj.discountAmount) || 0,
         }, items);
         toast("Invoice updated");
         log(`Updated invoice`);
@@ -150,6 +152,8 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
           status: obj.status || "Draft",
           due_date: obj.dueDate || "",
           notes: obj.notes || "",
+          tax_rate: parseFloat(obj.taxRate) || 0,
+          discount_amount: parseFloat(obj.discountAmount) || 0,
         }, items);
         toast("Invoice created");
         log(`Created invoice`);
