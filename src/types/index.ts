@@ -61,6 +61,8 @@ export interface Invoice {
   notes: string;
   lineItems: { desc: string; qty: number; unitPrice: number; amount: number }[];
   taxRate?: number;
+  discountType?: "percent" | "flat";
+  discountValue?: number;
   discountAmount?: number;
   lastSentAt?: string;
 }
@@ -118,4 +120,36 @@ export interface Task {
   createdAt: string;
 }
 
+// ─── Audit & Branding ────────────────────────────────────────────
+export interface AuditLog {
+  id: string;
+  invoice_id: string | null;
+  action: string;
+  performed_by: string | null;
+  details: string | null;
+  created_at: string;
+}
+
+export interface BrandSettings {
+  id: string;
+  accent_color: string;
+  footer_text: string;
+  terms_and_conditions: string;
+}
+
 export type Tab = "dashboard" | "events" | "clients" | "vendors" | "finances" | "guests" | "expenses" | "team" | "tasks";
+
+// ─── Calculation Helpers ──────────────────────────────────────────
+export function calcInvoiceTotals(
+  lineItems: { qty: number; unitPrice: number }[],
+  discountType: "percent" | "flat" = "flat",
+  discountValue: number = 0,
+  taxRate: number = 0,
+) {
+  const subtotal = lineItems.reduce((s, li) => s + li.qty * li.unitPrice, 0);
+  const discount = discountType === "percent" ? subtotal * (discountValue / 100) : discountValue;
+  const afterDiscount = Math.max(0, subtotal - discount);
+  const tax = afterDiscount * (taxRate / 100);
+  const grandTotal = afterDiscount + tax;
+  return { subtotal, discount, afterDiscount, tax, grandTotal };
+}
