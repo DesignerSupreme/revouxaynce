@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2 } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send } from "lucide-react";
 import type { Expense, BudgetItem } from "@/types";
 import { fmt$, fmtDate, shortDate } from "@/lib/helpers";
 import { generateInvoicePDF } from "@/lib/invoicePdf";
@@ -65,6 +65,9 @@ function toInvoice(inv: InvoiceWithLineItems): Invoice {
       unitPrice: Number(li.unit_price),
       amount: li.quantity * Number(li.unit_price),
     })),
+    taxRate: Number(inv.tax_rate) || 0,
+    discountAmount: Number(inv.discount_amount) || 0,
+    lastSentAt: inv.last_sent_at || undefined,
   };
 }
 
