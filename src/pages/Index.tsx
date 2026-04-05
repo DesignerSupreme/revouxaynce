@@ -303,27 +303,29 @@ function BarChart({ data, height = 200 }: { data: { label: string; value: number
   const barArea = chartH - 40;
 
   return (
-    <svg ref={ref} viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ maxHeight: height }}>
-      {[0, 0.25, 0.5, 0.75, 1].map(p => (
-        <line key={p} x1={0} x2={chartW} y1={barArea - barArea * p} y2={barArea - barArea * p}
-          stroke="currentColor" strokeOpacity={0.1} strokeWidth={0.5} />
-      ))}
-      {data.map((d, i) => {
-        const barH = (d.value / max) * barArea;
-        const x = i * (barW + 12) + 10;
-        const y = barArea - barH;
-        return (
-          <g key={i}>
-            <rect x={x} y={inView ? y : barArea} width={barW} height={inView ? barH : 0} fill="currentColor" opacity={0.85}
-              style={{ transition: `all 0.8s cubic-bezier(0.22, 1, 0.36, 1) ${i * 100}ms`, transformOrigin: "bottom" }} />
-            <text x={x + barW / 2} y={barArea + 14} textAnchor="middle" fontSize={8} fill="currentColor" opacity={inView ? 0.5 : 0}
-              className="font-sans" style={{ transition: "opacity 0.5s ease" }}>{d.label.length > 8 ? d.label.slice(0, 7) + "…" : d.label}</text>
-            <text x={x + barW / 2} y={y - 4} textAnchor="middle" fontSize={7} fill="currentColor" opacity={inView ? 0.6 : 0}
-              className="font-sans" style={{ transition: `opacity 0.5s ease ${i * 100 + 400}ms` }}>{d.value >= 1000 ? `$${(d.value / 1000).toFixed(1)}k` : `$${d.value}`}</text>
-          </g>
-        );
-      })}
-    </svg>
+    <div ref={ref}>
+      <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ maxHeight: height }}>
+        {[0, 0.25, 0.5, 0.75, 1].map(p => (
+          <line key={p} x1={0} x2={chartW} y1={barArea - barArea * p} y2={barArea - barArea * p}
+            stroke="currentColor" strokeOpacity={0.1} strokeWidth={0.5} />
+        ))}
+        {data.map((d, i) => {
+          const barH = (d.value / max) * barArea;
+          const x = i * (barW + 12) + 10;
+          const y = barArea - barH;
+          return (
+            <g key={i}>
+              <rect x={x} y={inView ? y : barArea} width={barW} height={inView ? barH : 0} fill="currentColor" opacity={0.85}
+                style={{ transition: `all 0.8s cubic-bezier(0.22, 1, 0.36, 1) ${i * 100}ms`, transformOrigin: "bottom" }} />
+              <text x={x + barW / 2} y={barArea + 14} textAnchor="middle" fontSize={8} fill="currentColor" opacity={inView ? 0.5 : 0}
+                className="font-sans" style={{ transition: "opacity 0.5s ease" }}>{d.label.length > 8 ? d.label.slice(0, 7) + "…" : d.label}</text>
+              <text x={x + barW / 2} y={y - 4} textAnchor="middle" fontSize={7} fill="currentColor" opacity={inView ? 0.6 : 0}
+                className="font-sans" style={{ transition: `opacity 0.5s ease ${i * 100 + 400}ms` }}>{d.value >= 1000 ? `$${(d.value / 1000).toFixed(1)}k` : `$${d.value}`}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
@@ -412,24 +414,26 @@ function LineChart({ data, height = 180 }: { data: { label: string; value: numbe
   const areaPath = `${linePath} L ${points[points.length - 1].x} ${padding + areaH} L ${points[0].x} ${padding + areaH} Z`;
 
   return (
-    <svg ref={ref} viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ maxHeight: height }}>
-      {[0, 0.25, 0.5, 0.75, 1].map(p => (
-        <line key={p} x1={padding} x2={chartW - padding} y1={padding + areaH - areaH * p} y2={padding + areaH - areaH * p}
-          stroke="currentColor" strokeOpacity={0.08} strokeWidth={0.5} />
-      ))}
-      <path d={areaPath} fill="currentColor" opacity={inView ? 0.08 : 0} style={{ transition: "opacity 1s ease" }} />
-      <path d={linePath} fill="none" stroke="currentColor" strokeWidth={2} opacity={inView ? 0.8 : 0}
-        strokeDasharray={inView ? "none" : "1000"} strokeDashoffset={inView ? "0" : "1000"}
-        style={{ transition: "stroke-dashoffset 1.5s ease, opacity 0.5s ease" }} />
-      {points.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r={3} fill="currentColor" opacity={inView ? 0.9 : 0}
-            style={{ transition: `opacity 0.3s ease ${i * 100 + 500}ms, r 0.2s ease` }} />
-          <text x={p.x} y={padding + areaH + 16} textAnchor="middle" fontSize={7} fill="currentColor" opacity={0.4}
-            className="font-sans">{data[i].label}</text>
-        </g>
-      ))}
-    </svg>
+    <div ref={ref}>
+      <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ maxHeight: height }}>
+        {[0, 0.25, 0.5, 0.75, 1].map(p => (
+          <line key={p} x1={padding} x2={chartW - padding} y1={padding + areaH - areaH * p} y2={padding + areaH - areaH * p}
+            stroke="currentColor" strokeOpacity={0.08} strokeWidth={0.5} />
+        ))}
+        <path d={areaPath} fill="currentColor" opacity={inView ? 0.08 : 0} style={{ transition: "opacity 1s ease" }} />
+        <path d={linePath} fill="none" stroke="currentColor" strokeWidth={2} opacity={inView ? 0.8 : 0}
+          strokeDasharray={inView ? "none" : "1000"} strokeDashoffset={inView ? "0" : "1000"}
+          style={{ transition: "stroke-dashoffset 1.5s ease, opacity 0.5s ease" }} />
+        {points.map((p, i) => (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r={3} fill="currentColor" opacity={inView ? 0.9 : 0}
+              style={{ transition: `opacity 0.3s ease ${i * 100 + 500}ms, r 0.2s ease` }} />
+            <text x={p.x} y={padding + areaH + 16} textAnchor="middle" fontSize={7} fill="currentColor" opacity={0.4}
+              className="font-sans">{data[i].label}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 }
 
