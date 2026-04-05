@@ -365,8 +365,14 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
         <form onSubmit={save}>
           <FormSelectLabeled label="Client" name="clientId" options={clients.map(c => ({ value: c.id, label: c.name }))} defaultValue={editing?.client_id || undefined} />
           <FormSelectLabeled label="Event" name="eventId" options={events.map(e => ({ value: e.id, label: e.name }))} defaultValue={editing?.event_id || undefined} />
-          <FormSelect label="Status" name="status" options={["Draft", "Quotation", "Sent", "Paid", "Overdue"]} defaultValue={editing?.status || "Draft"} />
+          <FormSelect label="Status" name="status" options={["Draft", "Quotation", "Sent", "Paid", "Overdue", "Revision Requested"]} defaultValue={editing?.status || "Draft"} />
           <FormInput label="Due Date" name="dueDate" type="date" defaultValue={editing?.due_date} />
+
+          {/* Tax & Discount */}
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <FormInput label="Tax Rate (%)" name="taxRate" type="number" step="0.01" defaultValue={editing?.tax_rate ?? 0} />
+            <FormInput label="Discount ($)" name="discountAmount" type="number" step="0.01" defaultValue={editing?.discount_amount ?? 0} />
+          </div>
 
           {/* Line Items */}
           <div className="mt-4">
