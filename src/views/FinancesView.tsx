@@ -585,6 +585,13 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
                         {(inv.version || 1) > 1 ? ` v${inv.version}` : ""}
                       </span>
                     </td>
+                    <td className="py-2 pr-2">
+                      {inv.assignedTo && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-sans text-muted-foreground border border-input px-1.5 py-0.5">
+                          <User size={9} /> {inv.assignedTo.split("@")[0]}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2 pr-4">{shortDate(inv.dueDate)}</td>
                     <td className="py-2" onClick={e => e.stopPropagation()}>
                       {deleting === inv.id ? <ConfirmDelete onConfirm={() => remove(inv.id)} onCancel={() => setDeleting(null)} /> : (
