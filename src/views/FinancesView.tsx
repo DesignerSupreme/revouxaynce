@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download } from "lucide-react";
 import type { Event, Client, Invoice, Expense, BudgetItem } from "@/types";
 import { uid, fmt$, fmtDate, shortDate } from "@/lib/helpers";
+import { generateInvoicePDF } from "@/lib/invoicePdf";
 import { Modal } from "@/components/app/Modal";
 import { FormInput, FormTextArea, FormSelect, FormSelectLabeled, Btn } from "@/components/app/FormElements";
 import { Badge } from "@/components/app/Badge";
@@ -80,6 +81,11 @@ export function FinancesView({ invoices, setInvoices, clients, events, expenses,
       <div className="animate-fade-in">
         <button onClick={() => setDetail(null)} className="text-sm text-muted-foreground mb-4 font-sans hover:text-foreground transition-colors">← Back to Finances</button>
         <h1 className="text-3xl mb-2">Invoice</h1><Badge status={inv.status} />
+        <div className="mt-3">
+          <button onClick={() => generateInvoicePDF(inv, client, event)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-sans uppercase tracking-wider border border-foreground hover:bg-foreground hover:text-background transition-all">
+            <Download size={14} /> Download PDF
+          </button>
+        </div>
         <div className="mt-6 space-y-2 text-sm font-sans">
           {client && <p><span className="text-muted-foreground">Client:</span> {client.name}</p>}
           {event && <p><span className="text-muted-foreground">Event:</span> {event.name}</p>}

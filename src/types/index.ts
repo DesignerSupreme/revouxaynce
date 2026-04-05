@@ -38,6 +38,7 @@ export interface Client {
   eventType: string;
   status: string;
   notes: { text: string; date: string }[];
+  portalToken?: string;
 }
 
 export interface Vendor {
@@ -98,4 +99,20 @@ export interface Activity {
   time: string;
 }
 
-export type Tab = "dashboard" | "events" | "clients" | "vendors" | "finances" | "guests" | "expenses" | "team";
+// ─── Task System ──────────────────────────────────────────────────
+export type TaskStage = "Planning" | "Vendor Coordination" | "Setup & Logistics" | "Event Execution" | "Post-Event";
+export type TaskPriority = "Low" | "Medium" | "High" | "Urgent";
+
+export interface Task {
+  id: string;
+  title: string;
+  eventId: string;
+  assigneeId: string;
+  stage: TaskStage;
+  priority: TaskPriority;
+  dueDate: string;
+  completed: boolean;
+  createdAt: string;
+}
+
+export type Tab = "dashboard" | "events" | "clients" | "vendors" | "finances" | "guests" | "expenses" | "team" | "tasks";
