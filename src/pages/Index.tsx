@@ -3,7 +3,7 @@ import {
   LayoutDashboard, CalendarDays, Users, Store, DollarSign, UserCheck,
   Plus, Trash2, Edit, X, ChevronRight, Star, Download, Clock,
   FileText, AlertCircle, Menu, ArrowUpDown, Receipt, Camera, Upload,
-  Lock, LogOut, Shield, Eye, EyeOff, BarChart3, TrendingUp
+  Lock, LogOut, Shield, Eye, EyeOff, BarChart3, TrendingUp, RotateCcw
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
 
@@ -330,7 +330,7 @@ function LoginPage({ onLogin, team }: { onLogin: (member: TeamMember) => void; t
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════
 const Revouxaynce = () => {
-  const [team, setTeam] = useLocalStorage<TeamMember[]>("team", seedTeam);
+  const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v2", seedTeam);
   const [currentUser, setCurrentUser] = useState<TeamMember | null>(() => {
     try { const s = localStorage.getItem("currentUser"); return s ? JSON.parse(s) : null; } catch { return null; }
   });
@@ -365,16 +365,29 @@ const Revouxaynce = () => {
 function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamMember; onLogout: () => void; team: TeamMember[]; setTeam: React.Dispatch<React.SetStateAction<TeamMember[]>> }) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [events, setEvents] = useLocalStorage("events", seedEvents);
-  const [clients, setClients] = useLocalStorage("clients", seedClients);
-  const [vendors, setVendors] = useLocalStorage("vendors", seedVendors);
-  const [invoices, setInvoices] = useLocalStorage("invoices", seedInvoices);
-  const [guests, setGuests] = useLocalStorage("guests", seedGuests);
-  const [expenses, setExpenses] = useLocalStorage("expenses", seedExpenses);
-  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines", () => []);
-  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets", () => []);
-  const [activities, setActivities] = useLocalStorage<Activity[]>("activities", () => []);
+  const [events, setEvents] = useLocalStorage("events_v2", seedEvents);
+  const [clients, setClients] = useLocalStorage("clients_v2", seedClients);
+  const [vendors, setVendors] = useLocalStorage("vendors_v2", seedVendors);
+  const [invoices, setInvoices] = useLocalStorage("invoices_v2", seedInvoices);
+  const [guests, setGuests] = useLocalStorage("guests_v2", seedGuests);
+  const [expenses, setExpenses] = useLocalStorage("expenses_v2", seedExpenses);
+  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v2", () => []);
+  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v2", () => []);
+  const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v2", () => []);
   const toast = React.useContext(ToastCtx);
+
+  const resetAllData = useCallback(() => {
+    setEvents(seedEvents());
+    setClients(seedClients());
+    setVendors(seedVendors());
+    setInvoices(seedInvoices());
+    setGuests(seedGuests());
+    setExpenses(seedExpenses());
+    setTimelines([]);
+    setBudgets([]);
+    setActivities([]);
+    toast("Sample data has been reset");
+  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, toast]);
 
   const log = useCallback((text: string) => {
     setActivities(a => [{ id: uid(), text, time: new Date().toISOString() }, ...a].slice(0, 20));
@@ -452,6 +465,11 @@ function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamM
               <div className="text-[10px] text-sidebar-foreground/50 uppercase">{currentUser.role}</div>
             </div>
           </div>
+          {currentUser.role === "admin" && (
+            <button onClick={resetAllData} className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
+              <RotateCcw size={12} /> Reset Sample Data
+            </button>
+          )}
           <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
             <LogOut size={12} /> Sign Out
           </button>
@@ -473,6 +491,11 @@ function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamM
               ))}
             </nav>
             <div className="px-4 py-3 border-t border-sidebar-border">
+              {currentUser.role === "admin" && (
+                <button onClick={resetAllData} className="flex items-center gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground">
+                  <RotateCcw size={12} /> Reset Sample Data
+                </button>
+              )}
               <button onClick={onLogout} className="flex items-center gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground">
                 <LogOut size={12} /> Sign Out
               </button>
