@@ -72,7 +72,7 @@ function toInvoice(inv: InvoiceWithLineItems): Invoice {
 }
 
 export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProps) {
-  const { invoices: dbInvoices, loading, error, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { invoices: dbInvoices, loading, error, createInvoice, updateInvoice, deleteInvoice, sendInvoiceEmail, markOverdue } = useInvoices();
   const { clients: dbClients, loading: clientsLoading } = useSupabaseClients();
   const { events: dbEvents, loading: eventsLoading } = useSupabaseEvents();
 
