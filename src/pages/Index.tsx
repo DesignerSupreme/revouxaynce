@@ -3,7 +3,7 @@ import {
   LayoutDashboard, CalendarDays, Users, Store, DollarSign, UserCheck,
   Plus, Trash2, Edit, X, ChevronRight, Star, Download, Clock,
   FileText, AlertCircle, Menu, ArrowUpDown, Receipt, Camera, Upload,
-  Lock, LogOut, Shield, Eye, EyeOff, BarChart3, TrendingUp
+  Lock, LogOut, Shield, Eye, EyeOff, BarChart3, TrendingUp, RotateCcw
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
 
@@ -330,7 +330,7 @@ function LoginPage({ onLogin, team }: { onLogin: (member: TeamMember) => void; t
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════
 const Revouxaynce = () => {
-  const [team, setTeam] = useLocalStorage<TeamMember[]>("team", seedTeam);
+  const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v2", seedTeam);
   const [currentUser, setCurrentUser] = useState<TeamMember | null>(() => {
     try { const s = localStorage.getItem("currentUser"); return s ? JSON.parse(s) : null; } catch { return null; }
   });
@@ -365,15 +365,15 @@ const Revouxaynce = () => {
 function AppShell({ currentUser, onLogout, team, setTeam }: { currentUser: TeamMember; onLogout: () => void; team: TeamMember[]; setTeam: React.Dispatch<React.SetStateAction<TeamMember[]>> }) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [events, setEvents] = useLocalStorage("events", seedEvents);
-  const [clients, setClients] = useLocalStorage("clients", seedClients);
-  const [vendors, setVendors] = useLocalStorage("vendors", seedVendors);
-  const [invoices, setInvoices] = useLocalStorage("invoices", seedInvoices);
-  const [guests, setGuests] = useLocalStorage("guests", seedGuests);
-  const [expenses, setExpenses] = useLocalStorage("expenses", seedExpenses);
-  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines", () => []);
-  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets", () => []);
-  const [activities, setActivities] = useLocalStorage<Activity[]>("activities", () => []);
+  const [events, setEvents] = useLocalStorage("events_v2", seedEvents);
+  const [clients, setClients] = useLocalStorage("clients_v2", seedClients);
+  const [vendors, setVendors] = useLocalStorage("vendors_v2", seedVendors);
+  const [invoices, setInvoices] = useLocalStorage("invoices_v2", seedInvoices);
+  const [guests, setGuests] = useLocalStorage("guests_v2", seedGuests);
+  const [expenses, setExpenses] = useLocalStorage("expenses_v2", seedExpenses);
+  const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v2", () => []);
+  const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v2", () => []);
+  const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v2", () => []);
   const toast = React.useContext(ToastCtx);
 
   const log = useCallback((text: string) => {
