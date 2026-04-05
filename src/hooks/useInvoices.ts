@@ -89,7 +89,6 @@ export function useInvoices() {
     if (err) throw new Error(err.message);
 
     if (lineItems !== undefined) {
-      // Delete existing line items and re-insert
       await supabase.from("line_items").delete().eq("invoice_id", id);
 
       const items = lineItems
@@ -116,5 +115,33 @@ export function useInvoices() {
     await fetchInvoices();
   };
 
-  return { invoices, loading, error, fetchInvoices, createInvoice, updateInvoice, deleteInvoice };
+  const sendInvoiceEmail = async (invoiceId: string, clientEmail: string, clientName: string, amount: number) => {
+    const portalUrl = `${window.location.origin}/portal/invoice/${invoiceId}`;
+    const { data, error: err } = await supabase.functions.invoke("send-invoice-email", {
+      body: { invoiceId, clientEmail, clientName, invoiceAmount: amount, portalUrl },
+    });
+    if (err) throw new Error(err.message);
+    await fetchInvoices();
+    return data;
+  };
+
+  const markOverdue = async () => {
+    const { error: err } = await supabase.rpc("mark_overdue_invoices");
+    if (err) console.error("Failed to mark overdue:", err.message);
+    else await fetchInvoices();
+  };
+
+  const updateStatus = async (id: string, status: string, notes?: string) => {
+    const updateData: Record<string, unknown> = { status };
+    if (notes !== undefined) updateData.notes = notes;
+    const { error: err } = await supabase.from("invoices").update(updateData).eq("id", id);
+    if (err) throw new Error(err.message);
+    await fetchInvoices();
+  };
+
+  return {
+    invoices, loading, error, fetchInvoices,
+    createInvoice, updateInvoice, deleteInvoice,
+    sendInvoiceEmail, markOverdue, updateStatus,
+  };
 }

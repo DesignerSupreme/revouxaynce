@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2 } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send } from "lucide-react";
 import type { Expense, BudgetItem } from "@/types";
 import { fmt$, fmtDate, shortDate } from "@/lib/helpers";
 import { generateInvoicePDF } from "@/lib/invoicePdf";
@@ -65,11 +65,14 @@ function toInvoice(inv: InvoiceWithLineItems): Invoice {
       unitPrice: Number(li.unit_price),
       amount: li.quantity * Number(li.unit_price),
     })),
+    taxRate: Number(inv.tax_rate) || 0,
+    discountAmount: Number(inv.discount_amount) || 0,
+    lastSentAt: inv.last_sent_at || undefined,
   };
 }
 
 export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProps) {
-  const { invoices: dbInvoices, loading, error, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { invoices: dbInvoices, loading, error, createInvoice, updateInvoice, deleteInvoice, sendInvoiceEmail, markOverdue } = useInvoices();
   const { clients: dbClients, loading: clientsLoading } = useSupabaseClients();
   const { events: dbEvents, loading: eventsLoading } = useSupabaseEvents();
 
@@ -87,6 +90,12 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   useEffect(() => {
     if (error) toast(`Failed to load invoices: ${error}`);
   }, [error, toast]);
+
+  // Auto-mark overdue invoices on load
+  useEffect(() => {
+    if (!loading) markOverdue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const totalBilled = invoices.reduce((s, i) => s + i.amount, 0);
   const totalPaid = invoices.filter(i => i.status === "Paid").reduce((s, i) => s + i.amount, 0);
@@ -131,6 +140,8 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
           status: obj.status || "Draft",
           due_date: obj.dueDate || "",
           notes: obj.notes || "",
+          tax_rate: parseFloat(obj.taxRate) || 0,
+          discount_amount: parseFloat(obj.discountAmount) || 0,
         }, items);
         toast("Invoice updated");
         log(`Updated invoice`);
@@ -141,6 +152,8 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
           status: obj.status || "Draft",
           due_date: obj.dueDate || "",
           notes: obj.notes || "",
+          tax_rate: parseFloat(obj.taxRate) || 0,
+          discount_amount: parseFloat(obj.discountAmount) || 0,
         }, items);
         toast("Invoice created");
         log(`Created invoice`);
@@ -182,17 +195,46 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
       <div className="animate-fade-in">
         <button onClick={() => setDetail(null)} className="text-sm text-muted-foreground mb-4 font-sans hover:text-foreground transition-colors">← Back to Finances</button>
         <h1 className="text-3xl mb-2">Invoice</h1><Badge status={inv.status} />
-        <div className="mt-3">
+        {inv.status === "Revision Requested" && inv.notes && (
+          <div className="mt-2 border border-foreground/30 bg-muted/50 p-3 text-sm font-sans">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Client Revision Request</span>
+            <p className="italic">"{inv.notes}"</p>
+          </div>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
           <button onClick={() => generateInvoicePDF(inv, client, event)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-sans uppercase tracking-wider border border-foreground hover:bg-foreground hover:text-background transition-all">
             <Download size={14} /> Download PDF
           </button>
+          {(inv.status === "Sent" || inv.status === "Quotation") && client && (
+            <button
+              onClick={async () => {
+                try {
+                  await sendInvoiceEmail(inv.id, client.email, client.name, inv.amount);
+                  toast(`Invoice sent to ${client.email}`);
+                  log(`Sent invoice to ${client.name}`);
+                } catch (err: any) {
+                  toast(`Error: ${err.message}`);
+                }
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-sans uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90 transition-all"
+            >
+              <Send size={14} /> Send to Client
+            </button>
+          )}
         </div>
+        {inv.lastSentAt && (
+          <p className="text-xs text-muted-foreground font-sans mt-2">
+            Last sent: {new Date(inv.lastSentAt).toLocaleString()}
+          </p>
+        )}
         <div className="mt-6 space-y-2 text-sm font-sans">
           {client && <p><span className="text-muted-foreground">Client:</span> {client.name}</p>}
           {event && <p><span className="text-muted-foreground">Event:</span> {event.name}</p>}
           <p><span className="text-muted-foreground">Amount:</span> {fmt$(inv.amount)}</p>
           <p><span className="text-muted-foreground">Due Date:</span> {fmtDate(inv.dueDate)}</p>
-          {inv.notes && <p><span className="text-muted-foreground">Notes:</span> {inv.notes}</p>}
+          {(inv.taxRate ?? 0) > 0 && <p><span className="text-muted-foreground">Tax Rate:</span> {inv.taxRate}%</p>}
+          {(inv.discountAmount ?? 0) > 0 && <p><span className="text-muted-foreground">Discount:</span> {fmt$(inv.discountAmount!)}</p>}
+          {inv.notes && inv.status !== "Revision Requested" && <p><span className="text-muted-foreground">Notes:</span> {inv.notes}</p>}
         </div>
         {inv.lineItems.length > 0 && (
           <div className="mt-6">
@@ -323,8 +365,14 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
         <form onSubmit={save}>
           <FormSelectLabeled label="Client" name="clientId" options={clients.map(c => ({ value: c.id, label: c.name }))} defaultValue={editing?.client_id || undefined} />
           <FormSelectLabeled label="Event" name="eventId" options={events.map(e => ({ value: e.id, label: e.name }))} defaultValue={editing?.event_id || undefined} />
-          <FormSelect label="Status" name="status" options={["Draft", "Quotation", "Sent", "Paid", "Overdue"]} defaultValue={editing?.status || "Draft"} />
+          <FormSelect label="Status" name="status" options={["Draft", "Quotation", "Sent", "Paid", "Overdue", "Revision Requested"]} defaultValue={editing?.status || "Draft"} />
           <FormInput label="Due Date" name="dueDate" type="date" defaultValue={editing?.due_date} />
+
+          {/* Tax & Discount */}
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <FormInput label="Tax Rate (%)" name="taxRate" type="number" step="0.01" defaultValue={editing?.tax_rate ?? 0} />
+            <FormInput label="Discount ($)" name="discountAmount" type="number" step="0.01" defaultValue={editing?.discount_amount ?? 0} />
+          </div>
 
           {/* Line Items */}
           <div className="mt-4">

@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import QRCode from "qrcode";
 import type { Invoice, Client, Event } from "@/types";
 import { fmt$ } from "./helpers";
 
@@ -50,7 +51,6 @@ export async function generateInvoicePDF(
       y += logoH + 2;
     }
   } catch {
-    // Fallback to text
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.text("REVOUXAYNCE", margin, y + 6);
@@ -65,10 +65,11 @@ export async function generateInvoicePDF(
   doc.setTextColor(0);
 
   // Invoice title (right-aligned)
+  const isQuotation = invoice.status === "Quotation";
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
   doc.setTextColor(180);
-  doc.text("INVOICE", pageW - margin, margin + 6, { align: "right" });
+  doc.text(isQuotation ? "QUOTATION" : "INVOICE", pageW - margin, margin + 6, { align: "right" });
   doc.setTextColor(0);
 
   y += 10;
@@ -110,11 +111,11 @@ export async function generateInvoicePDF(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(130);
-  doc.text("INVOICE NO.", labelX, ry);
+  doc.text(isQuotation ? "QUOTE NO." : "INVOICE NO.", labelX, ry);
   doc.setTextColor(0);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`INV-${invoice.id.slice(0, 8).toUpperCase()}`, valX, ry, { align: "right" });
+  doc.text(`${isQuotation ? "QT" : "INV"}-${invoice.id.slice(0, 8).toUpperCase()}`, valX, ry, { align: "right" });
   ry += 6;
 
   doc.setFont("helvetica", "bold");
@@ -197,7 +198,6 @@ export async function generateInvoicePDF(
       fillColor: [250, 250, 250],
     },
     didDrawCell: (data) => {
-      // Bottom border on each row
       if (data.section === "body") {
         doc.setDrawColor(235);
         doc.setLineWidth(0.3);
@@ -214,11 +214,13 @@ export async function generateInvoicePDF(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + 8;
 
-  // ─── TOTALS ───────────────────────────────────────────────
+  // ─── TOTALS with Tax & Discount ───────────────────────────
   const subtotal = items.reduce((s, li) => s + li.amount, 0);
-  const taxRate = 0; // configurable
-  const tax = subtotal * taxRate;
-  const grandTotal = subtotal + tax;
+  const taxRate = (invoice as any).taxRate ?? 0;
+  const discountAmount = (invoice as any).discountAmount ?? 0;
+  const taxableAmount = subtotal - discountAmount;
+  const tax = taxableAmount * (taxRate / 100);
+  const grandTotal = taxableAmount + tax;
 
   const totalsX = pageW - margin - 60;
   const totalsValX = pageW - margin;
@@ -230,8 +232,14 @@ export async function generateInvoicePDF(
   doc.text(fmt$(subtotal), totalsValX, y, { align: "right" });
   y += 6;
 
+  if (discountAmount > 0) {
+    doc.text("Discount", totalsX, y);
+    doc.text(`-${fmt$(discountAmount)}`, totalsValX, y, { align: "right" });
+    y += 6;
+  }
+
   if (taxRate > 0) {
-    doc.text(`Tax (${(taxRate * 100).toFixed(0)}%)`, totalsX, y);
+    doc.text(`Tax (${taxRate}%)`, totalsX, y);
     doc.text(fmt$(tax), totalsValX, y, { align: "right" });
     y += 6;
   }
@@ -281,21 +289,40 @@ export async function generateInvoicePDF(
     doc.setTextColor(0);
   }
 
-  // ─── FOOTER ───────────────────────────────────────────────
-  const footerY = doc.internal.pageSize.getHeight() - 25;
+  // ─── FOOTER with QR Code ─────────────────────────────────
+  const footerY = doc.internal.pageSize.getHeight() - 30;
   doc.setDrawColor(230);
   doc.setLineWidth(0.3);
   doc.line(margin, footerY, pageW - margin, footerY);
+
+  // QR Code linking to client portal
+  try {
+    const portalUrl = `${window.location.origin}/portal/invoice/${invoice.id}`;
+    const qrDataUrl = await QRCode.toDataURL(portalUrl, {
+      width: 200,
+      margin: 1,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+    const qrSize = 18;
+    doc.addImage(qrDataUrl, "PNG", pageW - margin - qrSize, footerY + 2, qrSize, qrSize);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(150);
+    doc.text("Scan to view in portal", pageW - margin - qrSize, footerY + qrSize + 4, { align: "left" });
+  } catch {
+    // QR code generation failed, skip silently
+  }
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(150);
   doc.text("Thank you for your business.", margin, footerY + 6);
   doc.text("Payment is due upon receipt unless otherwise specified.", margin, footerY + 10);
-  doc.text("REVOUXAYNCE", pageW - margin, footerY + 8, { align: "right" });
+  doc.text("REVOUXAYNCE", margin, footerY + 16);
   doc.setTextColor(0);
 
   // Download
   const clientName = client?.name?.replace(/\s+/g, "-") || "invoice";
-  doc.save(`Revouxaynce-Invoice-${clientName}-${invoice.id.slice(0, 8)}.pdf`);
+  doc.save(`Revouxaynce-${isQuotation ? "Quotation" : "Invoice"}-${clientName}-${invoice.id.slice(0, 8)}.pdf`);
 }
