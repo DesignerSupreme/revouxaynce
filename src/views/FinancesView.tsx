@@ -249,6 +249,28 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
     } catch (err: any) { toast(`Error: ${err.message}`); }
   };
 
+  const handleExportReport = useCallback((filteredInvs: Invoice[]) => {
+    const rows = filteredInvs.map(inv => {
+      const client = clients.find(c => c.id === inv.clientId);
+      const event = events.find(e => e.id === inv.eventId);
+      let msProgress = "N/A";
+      if (inv.billingType === "milestone" && inv.milestones && inv.milestones.length > 0) {
+        const done = inv.milestones.filter(m => m.status === "Approved" || m.status === "Invoiced").length;
+        msProgress = `${done}/${inv.milestones.length} (${Math.round((done / inv.milestones.length) * 100)}%)`;
+      }
+      return {
+        id: inv.id, clientName: client?.name || "—", eventName: event?.name || "—",
+        amount: inv.amount, status: inv.status, dueDate: inv.dueDate,
+        milestoneProgress: msProgress, lastReminder: inv.lastSentAt ? new Date(inv.lastSentAt).toLocaleDateString() : "—",
+      };
+    });
+    const csv = invoiceReportCsv(rows);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `invoice-report-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url); toast("Report exported");
+  }, [invoices, clients, events, toast]);
+
   const toggleSelect = (id: string) => { setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); };
   const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map(i => i.id))); };
 
