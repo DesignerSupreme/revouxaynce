@@ -31,3 +31,15 @@ export function invoicesToCsv(invoices: { id: string; clientName: string; eventN
   ).join("\n");
   return header + rows;
 }
+
+export function invoiceReportCsv(invoices: {
+  id: string; clientName: string; eventName: string; amount: number; status: string;
+  dueDate: string; milestoneProgress: string; lastReminder: string;
+}[]): string {
+  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const header = "Invoice ID,Client,Event,Status,Total,Due Date,Milestone Progress,Last Reminder\n";
+  const rows = invoices.map(i =>
+    [i.id.slice(0, 8), esc(i.clientName), esc(i.eventName), i.status, i.amount.toFixed(2), i.dueDate, esc(i.milestoneProgress), i.lastReminder].join(",")
+  ).join("\n");
+  return header + rows;
+}
