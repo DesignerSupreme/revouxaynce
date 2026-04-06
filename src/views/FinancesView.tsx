@@ -501,6 +501,14 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-3xl">Finances</h1>
         <div className="flex gap-2 flex-wrap">
+          <div className="flex border border-foreground mr-2">
+            {(["invoices", "analytics"] as const).map(t => (
+              <button key={t} onClick={() => setViewTab(t)}
+                className={`px-3 py-1.5 text-xs font-sans uppercase tracking-wider transition-all ${viewTab === t ? "bg-foreground text-background" : "hover:bg-muted"}`}>
+                {t === "invoices" ? <><FileText size={12} className="inline mr-1" />Invoices</> : <><PieChart size={12} className="inline mr-1" />Analytics</>}
+              </button>
+            ))}
+          </div>
           <Btn variant="secondary" onClick={() => setShowBranding(!showBranding)}><Palette size={14} className="inline mr-1" /> Branding</Btn>
           <Btn onClick={() => openModal()}><Plus size={14} className="inline mr-1" /> New Invoice</Btn>
         </div>
@@ -531,6 +539,10 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
         </FadeInUp>
       )}
 
+      {viewTab === "analytics" ? (
+        <AnalyticsDashboard invoices={latestInvoices} clients={clients} events={events} onExport={handleExportReport} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
         {[{ label: "Total Billed", value: totalBilled }, { label: "Total Paid", value: totalPaid }, { label: "Outstanding", value: outstanding }, { label: "Overdue", value: overdue }, { label: "Net Profit", value: totalPaid - totalExpenses }].map((c, i) => (
           <FadeInUp key={c.label} delay={i * 60}>
