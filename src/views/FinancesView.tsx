@@ -644,6 +644,8 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
           </table>
         </div>
       )}
+      </>
+      )}
 
       {/* Invoice Modal */}
       <Modal open={modal} onClose={() => { setModal(false); setEditing(null); setLineItems([]); setMilestones([]); }} title={editing ? (editing.status === "Sent" || editing.status === "Quotation" ? "Create Revision" : "Edit Invoice") : "New Invoice"} wide>
