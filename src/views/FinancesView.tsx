@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote, PieChart } from "lucide-react";
 import type { Expense, BudgetItem, Invoice, Client, Event, Milestone, MilestoneStatus } from "@/types";
 import { calcInvoiceTotals, calcMilestoneAmount } from "@/types";
-import { fmt$, fmtDate, shortDate, invoicesToCsv } from "@/lib/helpers";
+import { fmt$, fmtDate, shortDate, invoicesToCsv, invoiceReportCsv } from "@/lib/helpers";
 import { generateInvoicePDF } from "@/lib/invoicePdf";
 import { Modal } from "@/components/app/Modal";
 import { FormInput, FormTextArea, FormSelect, FormSelectLabeled, Btn } from "@/components/app/FormElements";
@@ -19,6 +19,7 @@ import { useAuditLogs } from "@/hooks/useAuditLogs";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useInvoiceComments } from "@/hooks/useInvoiceComments";
 import { supabase } from "@/integrations/supabase/client";
+import { AnalyticsDashboard } from "@/components/app/AnalyticsDashboard";
 
 interface FinancesViewProps {
   expenses: Expense[];
@@ -81,6 +82,7 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   const [billingType, setBillingType] = useState<"single" | "milestone">("single");
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showComments, setShowComments] = useState(false);
+  const [viewTab, setViewTab] = useState<"invoices" | "analytics">("invoices");
 
   // Internal notes debounced save
   const [internalNotes, setInternalNotes] = useState("");
@@ -246,6 +248,28 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
       setSelected(new Set());
     } catch (err: any) { toast(`Error: ${err.message}`); }
   };
+
+  const handleExportReport = useCallback((filteredInvs: Invoice[]) => {
+    const rows = filteredInvs.map(inv => {
+      const client = clients.find(c => c.id === inv.clientId);
+      const event = events.find(e => e.id === inv.eventId);
+      let msProgress = "N/A";
+      if (inv.billingType === "milestone" && inv.milestones && inv.milestones.length > 0) {
+        const done = inv.milestones.filter(m => m.status === "Approved" || m.status === "Invoiced").length;
+        msProgress = `${done}/${inv.milestones.length} (${Math.round((done / inv.milestones.length) * 100)}%)`;
+      }
+      return {
+        id: inv.id, clientName: client?.name || "—", eventName: event?.name || "—",
+        amount: inv.amount, status: inv.status, dueDate: inv.dueDate,
+        milestoneProgress: msProgress, lastReminder: inv.lastSentAt ? new Date(inv.lastSentAt).toLocaleDateString() : "—",
+      };
+    });
+    const csv = invoiceReportCsv(rows);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `invoice-report-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url); toast("Report exported");
+  }, [invoices, clients, events, toast]);
 
   const toggleSelect = (id: string) => { setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); };
   const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map(i => i.id))); };
@@ -477,6 +501,14 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-3xl">Finances</h1>
         <div className="flex gap-2 flex-wrap">
+          <div className="flex border border-foreground mr-2">
+            {(["invoices", "analytics"] as const).map(t => (
+              <button key={t} onClick={() => setViewTab(t)}
+                className={`px-3 py-1.5 text-xs font-sans uppercase tracking-wider transition-all ${viewTab === t ? "bg-foreground text-background" : "hover:bg-muted"}`}>
+                {t === "invoices" ? <><FileText size={12} className="inline mr-1" />Invoices</> : <><PieChart size={12} className="inline mr-1" />Analytics</>}
+              </button>
+            ))}
+          </div>
           <Btn variant="secondary" onClick={() => setShowBranding(!showBranding)}><Palette size={14} className="inline mr-1" /> Branding</Btn>
           <Btn onClick={() => openModal()}><Plus size={14} className="inline mr-1" /> New Invoice</Btn>
         </div>
@@ -507,6 +539,10 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
         </FadeInUp>
       )}
 
+      {viewTab === "analytics" ? (
+        <AnalyticsDashboard invoices={latestInvoices} clients={clients} events={events} onExport={handleExportReport} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
         {[{ label: "Total Billed", value: totalBilled }, { label: "Total Paid", value: totalPaid }, { label: "Outstanding", value: outstanding }, { label: "Overdue", value: overdue }, { label: "Net Profit", value: totalPaid - totalExpenses }].map((c, i) => (
           <FadeInUp key={c.label} delay={i * 60}>
@@ -607,6 +643,8 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
             </tbody>
           </table>
         </div>
+      )}
+      </>
       )}
 
       {/* Invoice Modal */}
