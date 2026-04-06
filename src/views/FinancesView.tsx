@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote, PieChart } from "lucide-react";
 import type { Expense, BudgetItem, Invoice, Client, Event, Milestone, MilestoneStatus } from "@/types";
 import { calcInvoiceTotals, calcMilestoneAmount } from "@/types";
-import { fmt$, fmtDate, shortDate, invoicesToCsv } from "@/lib/helpers";
+import { fmt$, fmtDate, shortDate, invoicesToCsv, invoiceReportCsv } from "@/lib/helpers";
 import { generateInvoicePDF } from "@/lib/invoicePdf";
 import { Modal } from "@/components/app/Modal";
 import { FormInput, FormTextArea, FormSelect, FormSelectLabeled, Btn } from "@/components/app/FormElements";
@@ -19,6 +19,7 @@ import { useAuditLogs } from "@/hooks/useAuditLogs";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useInvoiceComments } from "@/hooks/useInvoiceComments";
 import { supabase } from "@/integrations/supabase/client";
+import { AnalyticsDashboard } from "@/components/app/AnalyticsDashboard";
 
 interface FinancesViewProps {
   expenses: Expense[];
