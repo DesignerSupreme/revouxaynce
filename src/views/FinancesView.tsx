@@ -82,6 +82,7 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   const [billingType, setBillingType] = useState<"single" | "milestone">("single");
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showComments, setShowComments] = useState(false);
+  const [viewTab, setViewTab] = useState<"invoices" | "analytics">("invoices");
 
   // Internal notes debounced save
   const [internalNotes, setInternalNotes] = useState("");
