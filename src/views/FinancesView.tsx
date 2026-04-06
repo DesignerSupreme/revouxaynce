@@ -105,7 +105,8 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   const [sortBy, setSortBy] = useState<"date" | "amount">("date");
 
   useEffect(() => { if (error) toast(`Failed to load invoices: ${error}`); }, [error, toast]);
-  useEffect(() => { if (!loading) markOverdue(); /* eslint-disable-next-line */ }, [loading]);
+  const overdueChecked = useRef(false);
+  useEffect(() => { if (!loading && !overdueChecked.current) { overdueChecked.current = true; markOverdue(); } }, [loading, markOverdue]);
   useEffect(() => {
     if (detail) {
       fetchLogs(detail);
