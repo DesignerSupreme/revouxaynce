@@ -88,7 +88,7 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   const [internalNotes, setInternalNotes] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveInternalFields = useCallback((id: string, fields: Record<string, string>) => {
+  const saveInternalFields = useCallback((id: string, fields: { internal_notes?: string; assigned_to?: string }) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       await supabase.from("invoices").update(fields).eq("id", id);
