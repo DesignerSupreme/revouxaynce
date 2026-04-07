@@ -325,7 +325,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_portal_token: { Args: never; Returns: string }
       mark_overdue_invoices: { Args: never; Returns: undefined }
+      portal_client_access: { Args: { _client_id: string }; Returns: boolean }
+      portal_invoice_access: { Args: { _invoice_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
