@@ -169,7 +169,7 @@ export function useInvoices() {
 
   const updateStatus = async (id: string, status: string, notes?: string) => {
     const old = invoices.find((i) => i.id === id);
-    const updateData: Record<string, unknown> = { status };
+    const updateData: { status: string; notes?: string } = { status };
     if (notes !== undefined) updateData.notes = notes;
     const { error: err } = await supabase.from("invoices").update(updateData).eq("id", id);
     if (err) throw new Error(err.message);
