@@ -13,6 +13,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verify the caller is authenticated (or service role for cron)
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     const now = new Date()
     const threeDaysFromNow = new Date(now)
