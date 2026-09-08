@@ -30,6 +30,9 @@ export interface BudgetItem {
   actual: number;
 }
 
+export const CLIENT_PIPELINE = ["Enquiry", "Quoted", "Booked", "Delivered", "Archived"] as const;
+export type PipelineStage = (typeof CLIENT_PIPELINE)[number];
+
 export interface Client {
   id: string;
   name: string;
@@ -37,6 +40,7 @@ export interface Client {
   phone: string;
   eventType: string;
   status: string;
+  pipelineStage: PipelineStage;
   notes: { text: string; date: string }[];
   portalToken?: string;
 }
@@ -99,8 +103,12 @@ export interface Expense {
   id: string;
   date: string;
   vendor: string;
+  vendorId?: string;
   category: string;
   amount: number;
+  currency: string;
+  fxRate: number;
+  paid: boolean;
   eventId: string;
   notes: string;
   receiptUrl: string;
