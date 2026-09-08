@@ -75,13 +75,15 @@ export function GuestsView({ guests, setGuests, events, log, toast }: GuestsView
     <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-3xl">Guests</h1>
-        <div className="flex gap-2 flex-wrap">
-          <select value={eventFilter} onChange={e => setEventFilter(e.target.value)} className="border border-input px-3 py-2 text-sm font-sans bg-background transition-colors focus:border-foreground focus:outline-none">
+        <div className="flex gap-2 flex-wrap print:hidden">
+          <select value={eventFilter} onChange={e => setEventFilter(e.target.value)} aria-label="Filter by event" className="border border-input px-3 py-2 text-sm font-sans bg-background transition-colors focus:border-foreground focus:outline-none">
             <option value="">All Events</option>{events.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
           </select>
+          <Btn variant="secondary" onClick={() => window.print()}><Printer size={14} className="inline mr-1" /> Print</Btn>
           <Btn variant="secondary" onClick={exportCSV}><Download size={14} className="inline mr-1" /> CSV</Btn>
           <Btn onClick={() => { setEditing(null); setModal(true); }}><Plus size={14} className="inline mr-1" /> New</Btn>
         </div>
+
       </div>
 
       <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
@@ -114,7 +116,9 @@ export function GuestsView({ guests, setGuests, events, log, toast }: GuestsView
         </FadeInUp>
       </div>
 
-      {filtered.length === 0 ? <Empty icon={UserCheck} text="No guests yet. Add your first guest to Revouxaynce." /> : (
+      {filtered.length === 0 ? <Empty icon={UserCheck} text="No guests yet."
+        hint="Add the people invited to this event, then track who has replied and any dietary needs."
+        actionLabel="Add the first guest" onAction={() => { setEditing(null); setModal(true); }} /> : (
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-sm font-sans min-w-[640px]">
             <thead><tr className="border-b border-foreground text-left text-xs uppercase tracking-wider text-muted-foreground">
