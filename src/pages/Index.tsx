@@ -151,7 +151,17 @@ function AppShell({ currentUser, onLogout }: {
   const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v5", () => []);
   const toast = React.useContext(ToastCtx);
   toastRef.current = toast;
-  const guardedToast = React.useCallback((section: string) => (msg: string) => toast(msg), [toast]);
+
+  /** Blocks writes for roles that may not change a section (the database enforces this too). */
+  const guard = React.useCallback(
+    <T,>(section: string, setter: React.Dispatch<React.SetStateAction<T>>): React.Dispatch<React.SetStateAction<T>> =>
+      (canEdit(role, section)
+        ? setter
+        : (() => {
+            toast(`Your ${ROLE_LABELS[role]} access is read-only for ${section}`);
+          }) as React.Dispatch<React.SetStateAction<T>>),
+    [role, toast],
+  );
   const [transitioning, setTransitioning] = useState(false);
 
   const refreshAll = useCallback(() => {
@@ -302,15 +312,22 @@ function AppShell({ currentUser, onLogout }: {
             </div>
           )}
 
+          {!canWrite(role) && (
+            <div className="mb-4 border border-foreground px-3 py-2 text-xs font-sans">
+              <span className="uppercase tracking-wider font-semibold">{ROLE_LABELS[role]}</span>
+              <span className="text-muted-foreground"> — {role === "assistant" ? "you can change tasks, guests and expenses only." : "you have read-only access."}</span>
+            </div>
+          )}
+
           <div className={`transition-all duration-150 ${transitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}>
             {tab === "dashboard" && <DashboardView events={events} clients={clients} invoices={invoices} guests={guests} expenses={expenses} activities={activities} vendors={vendors} timelines={timelines} budgets={budgets} setTab={handleNav} />}
-            {tab === "events" && <EventsView events={events} setEvents={setEvents} clients={clients} vendors={vendors} guests={guests} setGuests={setGuests} timelines={timelines} setTimelines={setTimelines} budgets={budgets} setBudgets={setBudgets} log={log} toast={toast} />}
-            {tab === "tasks" && <TasksView tasks={tasks} setTasks={setTasks} events={events} team={team} log={log} toast={toast} />}
-            {tab === "clients" && <ClientsView clients={clients} setClients={setClients} events={events} log={log} toast={toast} />}
-            {tab === "vendors" && <VendorsView vendors={vendors} setVendors={setVendors} events={events} log={log} toast={toast} />}
+            {tab === "events" && <EventsView events={events} setEvents={guard("events", setEvents)} clients={clients} vendors={vendors} guests={guests} setGuests={guard("guests", setGuests)} timelines={timelines} setTimelines={guard("events", setTimelines)} budgets={budgets} setBudgets={guard("events", setBudgets)} log={log} toast={toast} />}
+            {tab === "tasks" && <TasksView tasks={tasks} setTasks={guard("tasks", setTasks)} events={events} team={team} log={log} toast={toast} />}
+            {tab === "clients" && <ClientsView clients={clients} setClients={guard("clients", setClients)} events={events} log={log} toast={toast} />}
+            {tab === "vendors" && <VendorsView vendors={vendors} setVendors={guard("vendors", setVendors)} events={events} log={log} toast={toast} />}
             {tab === "finances" && <FinancesView expenses={expenses} budgets={budgets} log={log} toast={toast} />}
-            {tab === "expenses" && <ExpensesView expenses={expenses} setExpenses={setExpenses} events={events} log={log} toast={toast} />}
-            {tab === "guests" && <GuestsView guests={guests} setGuests={setGuests} events={events} log={log} toast={toast} />}
+            {tab === "expenses" && <ExpensesView expenses={expenses} setExpenses={guard("expenses", setExpenses)} events={events} log={log} toast={toast} />}
+            {tab === "guests" && <GuestsView guests={guests} setGuests={guard("guests", setGuests)} events={events} log={log} toast={toast} />}
             {tab === "team" && <TeamView currentUserId={currentUser.id} currentRole={role} toast={toast} log={log} />}
           </div>
         </div>
