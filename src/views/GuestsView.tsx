@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { UserCheck, Plus, Edit, Trash2, Download } from "lucide-react";
+import { UserCheck, Plus, Edit, Trash2, Download, Printer } from "lucide-react";
 import type { Event, Guest } from "@/types";
 import { uid } from "@/lib/helpers";
 import { Modal } from "@/components/app/Modal";
