@@ -231,6 +231,13 @@ export type Database = {
             foreignKeyName: "expenses_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "expenses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
@@ -284,6 +291,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "guests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
           {
             foreignKeyName: "guests_event_id_fkey"
             columns: ["event_id"]
@@ -410,6 +424,13 @@ export type Database = {
             foreignKeyName: "invoices_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "invoices_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
@@ -526,6 +547,13 @@ export type Database = {
             foreignKeyName: "tasks_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
@@ -593,10 +621,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      event_financials: {
+        Row: {
+          client_id: string | null
+          event_id: string | null
+          event_name: string | null
+          invoiced: number | null
+          margin: number | null
+          margin_pct: number | null
+          paid: number | null
+          spent: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       backfill_portal_tokens: { Args: never; Returns: number }
+      calc_invoice_totals: {
+        Args: {
+          _discount_type: string
+          _discount_value: number
+          _subtotal: number
+          _tax_rate: number
+        }
+        Returns: {
+          after_discount: number
+          discount: number
+          grand_total: number
+          subtotal: number
+          tax: number
+        }[]
+      }
       can_assist: { Args: never; Returns: boolean }
       can_write: { Args: never; Returns: boolean }
       current_portal_token: { Args: never; Returns: string }
@@ -606,6 +669,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      invoice_totals: {
+        Args: { _invoice_id: string }
+        Returns: {
+          after_discount: number
+          discount: number
+          grand_total: number
+          subtotal: number
+          tax: number
+        }[]
       }
       is_admin: { Args: never; Returns: boolean }
       mark_overdue_invoices: { Args: never; Returns: undefined }
@@ -621,6 +694,7 @@ export type Database = {
       }
       portal_invoice_access: { Args: { _invoice_id: string }; Returns: boolean }
       rotate_portal_token: { Args: { p_client_id: string }; Returns: string }
+      test_invoice_totals: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "planner" | "assistant" | "viewer"
