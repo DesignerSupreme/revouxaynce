@@ -76,6 +76,139 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_lines: {
+        Row: {
+          budget_id: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          position: number
+          quantity: number
+          status: string
+          unit_price: number
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          budget_id: string
+          category?: string
+          created_at?: string
+          description: string
+          id?: string
+          position?: number
+          quantity?: number
+          status?: string
+          unit_price?: number
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          budget_id?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          position?: number
+          quantity?: number
+          status?: string
+          unit_price?: number
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_lines_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budgets: {
+        Row: {
+          concept_id: string | null
+          contingency_type: string
+          contingency_value: number
+          created_at: string
+          currency: string
+          event_id: string
+          id: string
+          internal_notes: string | null
+          notes: string | null
+          parent_id: string | null
+          shared_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          concept_id?: string | null
+          contingency_type?: string
+          contingency_value?: number
+          created_at?: string
+          currency?: string
+          event_id: string
+          id?: string
+          internal_notes?: string | null
+          notes?: string | null
+          parent_id?: string | null
+          shared_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          concept_id?: string | null
+          contingency_type?: string
+          contingency_value?: number
+          created_at?: string
+          currency?: string
+          event_id?: string
+          id?: string
+          internal_notes?: string | null
+          notes?: string | null
+          parent_id?: string | null
+          shared_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "budgets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -126,6 +259,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      concepts: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          position: number
+          shared_at: string | null
+          status: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          position?: number
+          shared_at?: string | null
+          status?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          position?: number
+          shared_at?: string | null
+          status?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concepts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "concepts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -356,6 +540,115 @@ export type Database = {
           },
         ]
       }
+      inspiration_boards: {
+        Row: {
+          concept_id: string | null
+          cover_item_id: string | null
+          created_at: string
+          description: string | null
+          event_id: string
+          id: string
+          shared_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          concept_id?: string | null
+          cover_item_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          shared_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          concept_id?: string | null
+          cover_item_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          shared_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspiration_boards_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspiration_boards_cover_item_fkey"
+            columns: ["cover_item_id"]
+            isOneToOne: false
+            referencedRelation: "inspiration_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspiration_boards_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "inspiration_boards_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspiration_items: {
+        Row: {
+          board_id: string
+          caption: string | null
+          category: string | null
+          created_at: string
+          id: string
+          position: number
+          source_url: string | null
+          storage_path: string
+        }
+        Insert: {
+          board_id: string
+          caption?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          position?: number
+          source_url?: string | null
+          storage_path: string
+        }
+        Update: {
+          board_id?: string
+          caption?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          position?: number
+          source_url?: string | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspiration_items_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "inspiration_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_comments: {
         Row: {
           author: string
@@ -533,6 +826,61 @@ export type Database = {
           },
         ]
       }
+      portal_responses: {
+        Row: {
+          action: string
+          body: string | null
+          client_id: string
+          created_at: string
+          event_id: string | null
+          id: string
+          subject_id: string
+          subject_type: string
+        }
+        Insert: {
+          action: string
+          body?: string | null
+          client_id: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          subject_id: string
+          subject_type: string
+        }
+        Update: {
+          action?: string
+          body?: string | null
+          client_id?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          subject_id?: string
+          subject_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_responses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_responses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "portal_responses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -634,6 +982,120 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vendor_option_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          headline: string | null
+          id: string
+          image_path: string | null
+          link_url: string | null
+          option_id: string
+          position: number
+          price: number | null
+          vendor_id: string | null
+          vendor_name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          headline?: string | null
+          id?: string
+          image_path?: string | null
+          link_url?: string | null
+          option_id: string
+          position?: number
+          price?: number | null
+          vendor_id?: string | null
+          vendor_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          headline?: string | null
+          id?: string
+          image_path?: string | null
+          link_url?: string | null
+          option_id?: string
+          position?: number
+          price?: number | null
+          vendor_id?: string | null
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_option_items_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_options: {
+        Row: {
+          category: string | null
+          concept_id: string | null
+          created_at: string
+          description: string | null
+          event_id: string
+          id: string
+          selection_mode: string
+          shared_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          concept_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          selection_mode?: string
+          shared_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          concept_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          selection_mode?: string
+          shared_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_options_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_options_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_financials"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "vendor_options_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendors: {
         Row: {
@@ -752,6 +1214,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       mark_overdue_invoices: { Args: never; Returns: undefined }
       portal_client_access: { Args: { _client_id: string }; Returns: boolean }
+      portal_client_from_token: { Args: never; Returns: string }
       portal_current_client: {
         Args: never
         Returns: {
@@ -761,6 +1224,7 @@ export type Database = {
           phone: string
         }[]
       }
+      portal_event_access: { Args: { p_event_id: string }; Returns: boolean }
       portal_invoice_access: { Args: { _invoice_id: string }; Returns: boolean }
       rotate_portal_token: { Args: { p_client_id: string }; Returns: string }
       test_invoice_totals: { Args: never; Returns: string }
