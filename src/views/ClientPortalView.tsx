@@ -40,6 +40,7 @@ export function ClientPortalView({ token }: { token: string | null }) {
         </p>
 
         <PortalEventList events={events} invoices={invoices} client={client} onUpdateStatus={updateInvoiceStatus} />
+        <PortalMoodBoards token={token} events={events} />
         <PortalInvoiceTable invoices={invoices} events={events} client={client} />
 
         <div className="mt-12 pt-6 border-t border-input text-center">
