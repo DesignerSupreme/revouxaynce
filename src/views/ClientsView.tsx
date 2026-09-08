@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Users, Plus, Edit, Trash2 } from "lucide-react";
-import type { Event, Client } from "@/types";
+import type { Event, Client, PipelineStage } from "@/types";
+import { CLIENT_PIPELINE } from "@/types";
 import { uid, shortDate } from "@/lib/helpers";
 import { Modal } from "@/components/app/Modal";
 import { FormInput, FormSelect, Btn } from "@/components/app/FormElements";
@@ -24,17 +25,19 @@ export function ClientsView({ clients, setClients, events, log, toast }: Clients
   const [detail, setDetail] = useState<string | null>(null);
   const [view, setView] = useState<"table" | "pipeline">("pipeline");
   const [deleting, setDeleting] = useState<string | null>(null);
-  const pipeline = ["Inquiry", "Quoted", "Confirmed", "Completed"];
+  const pipeline = CLIENT_PIPELINE as unknown as string[];
+  const stageOf = (c: Client): string => c.pipelineStage || "Enquiry";
 
   const save = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
+    const stage = (obj.pipelineStage || "Enquiry") as PipelineStage;
     if (editing) {
-      setClients(cs => cs.map(c => c.id === editing.id ? { ...c, name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", status: obj.status || "", notes: c.notes } : c));
+      setClients(cs => cs.map(c => c.id === editing.id ? { ...c, name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", pipelineStage: stage, notes: c.notes } : c));
       toast("Client updated"); log(`Updated client: ${obj.name}`);
     } else {
-      setClients(cs => [...cs, { id: uid(), name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", status: obj.status || "Inquiry", notes: [] }]);
+      setClients(cs => [...cs, { id: uid(), name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", status: "Active", pipelineStage: stage, notes: [] }]);
       toast("Client created"); log(`Created client: ${obj.name}`);
     }
     setModal(false); setEditing(null);
