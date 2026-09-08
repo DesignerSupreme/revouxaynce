@@ -1,5 +1,30 @@
 import type { Event, Client, Vendor, Invoice, Guest, Expense, TeamMember, Task } from "@/types";
 
+/**
+ * Database-ready sample data: the readable seed ids ("cl-tariro-001") are
+ * swapped for real UUIDs while every relationship is kept intact.
+ */
+export function buildSeedDataset() {
+  const map = new Map<string, string>();
+  const id = (old: string): string => {
+    if (!old) return "";
+    const found = map.get(old);
+    if (found) return found;
+    const fresh = crypto.randomUUID();
+    map.set(old, fresh);
+    return fresh;
+  };
+
+  const clients = seedClients().map((c) => ({ ...c, id: id(c.id) }));
+  const events = seedEvents().map((e) => ({ ...e, id: id(e.id), clientId: id(e.clientId) }));
+  const vendors = seedVendors().map((v) => ({ ...v, id: id(v.id), eventIds: v.eventIds.map(id) }));
+  const guests = seedGuests().map((g) => ({ ...g, id: id(g.id), eventId: id(g.eventId) }));
+  const expenses = seedExpenses().map((x) => ({ ...x, id: id(x.id), eventId: id(x.eventId) }));
+  const tasks = seedTasks().map((t) => ({ ...t, id: id(t.id), eventId: id(t.eventId) }));
+
+  return { clients, events, vendors, guests, expenses, tasks };
+}
+
 // ─── Stable IDs ───────────────────────────────────────────────────
 // Pre-generated so every entity can reference others reliably.
 

@@ -126,6 +126,8 @@ export type Database = {
           client_id: string | null
           created_at: string
           date: string
+          event_date: string | null
+          event_time: string | null
           id: string
           name: string
           notes: string | null
@@ -138,6 +140,8 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date: string
+          event_date?: string | null
+          event_time?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -150,6 +154,8 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date?: string
+          event_date?: string | null
+          event_time?: string | null
           id?: string
           name?: string
           notes?: string | null
@@ -164,6 +170,113 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          event_id: string | null
+          id: string
+          notes: string
+          paid: boolean
+          receipt_url: string
+          spent_on: string
+          updated_at: string
+          vendor: string
+          vendor_id: string | null
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          notes?: string
+          paid?: boolean
+          receipt_url?: string
+          spent_on?: string
+          updated_at?: string
+          vendor?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          notes?: string
+          paid?: boolean
+          receipt_url?: string
+          spent_on?: string
+          updated_at?: string
+          vendor?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guests: {
+        Row: {
+          created_at: string
+          dietary: string
+          email: string
+          event_id: string | null
+          id: string
+          name: string
+          phone: string
+          rsvp: string
+          table_group: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dietary?: string
+          email?: string
+          event_id?: string | null
+          id?: string
+          name: string
+          phone?: string
+          rsvp?: string
+          table_group?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dietary?: string
+          email?: string
+          event_id?: string | null
+          id?: string
+          name?: string
+          phone?: string
+          rsvp?: string
+          table_group?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -210,6 +323,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           due_date: string
+          due_on: string | null
           event_id: string | null
           id: string
           internal_notes: string | null
@@ -232,6 +346,7 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number | null
           due_date: string
+          due_on?: string | null
           event_id?: string | null
           id?: string
           internal_notes?: string | null
@@ -254,6 +369,7 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number | null
           due_date?: string
+          due_on?: string | null
           event_id?: string | null
           id?: string
           internal_notes?: string | null
@@ -325,6 +441,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tasks: {
+        Row: {
+          assignee_id: string
+          completed: boolean
+          created_at: string
+          due_on: string | null
+          event_id: string | null
+          id: string
+          priority: string
+          stage: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string
+          completed?: boolean
+          created_at?: string
+          due_on?: string | null
+          event_id?: string | null
+          id?: string
+          priority?: string
+          stage?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string
+          completed?: boolean
+          created_at?: string
+          due_on?: string | null
+          event_id?: string | null
+          id?: string
+          priority?: string
+          stage?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          category: string
+          contact: string
+          created_at: string
+          event_ids: string[]
+          id: string
+          name: string
+          notes: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          contact?: string
+          created_at?: string
+          event_ids?: string[]
+          id?: string
+          name: string
+          notes?: string
+          rating?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          contact?: string
+          created_at?: string
+          event_ids?: string[]
+          id?: string
+          name?: string
+          notes?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -4,14 +4,13 @@ import {
   LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal, ClipboardList
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
-import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Task } from "@/types";
+import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Invoice, Milestone } from "@/types";
 import { uid } from "@/lib/helpers";
-import { markOverdueInvoices } from "@/lib/dataService";
-import {
-  seedEvents, seedClients, seedVendors, seedInvoices,
-  seedGuests, seedExpenses, seedTeam, seedTasks,
-} from "@/lib/seedData";
+import { seedTeam, buildSeedDataset } from "@/lib/seedData";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSupabaseCollection } from "@/hooks/useSupabaseCollection";
+import { clientMapper, eventMapper, expenseMapper, guestMapper, taskMapper, vendorMapper } from "@/lib/dbMappers";
+import { useInvoices } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { ToastProvider, ToastCtx } from "@/components/app/Toast";
@@ -86,48 +85,88 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sampleDataEnabled, setSampleDataEnabled] = useLocalStorage("sampleDataEnabled_v5", () => true);
-  const [events, setEvents] = useLocalStorage("events_v5", seedEvents);
-  const [clients, setClients] = useLocalStorage("clients_v5", seedClients);
-  const [vendors, setVendors] = useLocalStorage("vendors_v5", seedVendors);
-  const [invoices, setInvoices] = useLocalStorage("invoices_v5", seedInvoices);
-  const [guests, setGuests] = useLocalStorage("guests_v5", seedGuests);
-  const [expenses, setExpenses] = useLocalStorage("expenses_v5", seedExpenses);
+
+  // Shared database collections (previously browser-only)
+  const clientsCol = useSupabaseCollection(clientMapper);
+  const eventsCol = useSupabaseCollection(eventMapper);
+  const vendorsCol = useSupabaseCollection(vendorMapper);
+  const guestsCol = useSupabaseCollection(guestMapper);
+  const expensesCol = useSupabaseCollection(expenseMapper);
+  const tasksCol = useSupabaseCollection(taskMapper);
+
+  const { items: clients, setItems: setClients } = clientsCol;
+  const { items: events, setItems: setEvents } = eventsCol;
+  const { items: vendors, setItems: setVendors } = vendorsCol;
+  const { items: guests, setItems: setGuests } = guestsCol;
+  const { items: expenses, setItems: setExpenses } = expensesCol;
+  const { items: tasks, setItems: setTasks } = tasksCol;
+
+  const { invoices: dbInvoices, fetchInvoices } = useInvoices();
+  const invoices: Invoice[] = React.useMemo(
+    () =>
+      dbInvoices.map((inv) => ({
+        id: inv.id,
+        clientId: inv.client_id ?? "",
+        eventId: inv.event_id ?? "",
+        amount: inv.amount,
+        status: inv.status,
+        dueDate: inv.due_date,
+        notes: inv.notes ?? "",
+        lineItems: inv.line_items.map((li) => ({
+          desc: li.description,
+          qty: li.quantity,
+          unitPrice: Number(li.unit_price),
+          amount: li.quantity * Number(li.unit_price),
+        })),
+        taxRate: inv.tax_rate == null ? undefined : Number(inv.tax_rate),
+        discountType: (inv.discount_type as "percent" | "flat" | null) ?? undefined,
+        discountValue: inv.discount_value == null ? undefined : Number(inv.discount_value),
+        discountAmount: inv.discount_amount == null ? undefined : Number(inv.discount_amount),
+        billingType: (inv.billing_type as "single" | "milestone" | null) ?? undefined,
+        milestones: (inv.milestones as unknown as Milestone[] | null) ?? undefined,
+        version: inv.version ?? undefined,
+        parentId: inv.parent_id ?? null,
+      })),
+    [dbInvoices],
+  );
+
   const [timelines, setTimelines] = useLocalStorage<TimelineBlock[]>("timelines_v5", () => []);
   const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v5", () => []);
   const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v5", () => []);
-  const [tasks, setTasks] = useLocalStorage<Task[]>("tasks_v5", seedTasks);
   const toast = React.useContext(ToastCtx);
   const [transitioning, setTransitioning] = useState(false);
 
-  // Auto-mark overdue invoices
-  useEffect(() => {
-    const updated = markOverdueInvoices(invoices);
-    if (JSON.stringify(updated) !== JSON.stringify(invoices)) {
-      setInvoices(updated);
-    }
-  }, [invoices, setInvoices]);
+  const refreshAll = useCallback(() => {
+    void clientsCol.refresh();
+    void eventsCol.refresh();
+    void vendorsCol.refresh();
+    void guestsCol.refresh();
+    void expensesCol.refresh();
+    void tasksCol.refresh();
+    void fetchInvoices();
+  }, [clientsCol, eventsCol, vendorsCol, guestsCol, expensesCol, tasksCol, fetchInvoices]);
 
   const resetAllData = useCallback(() => {
-    setEvents(seedEvents());
-    setClients(seedClients());
-    setVendors(seedVendors());
-    setInvoices(seedInvoices());
-    setGuests(seedGuests());
-    setExpenses(seedExpenses());
+    const seed = buildSeedDataset();
+    setClients(seed.clients);
+    setEvents(seed.events);
+    setVendors(seed.vendors);
+    setGuests(seed.guests);
+    setExpenses(seed.expenses);
+    setTasks(seed.tasks);
     setTimelines([]);
     setBudgets([]);
     setActivities([]);
-    setTasks([]);
     setSampleDataEnabled(true);
     toast("Sample data has been reset");
-  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, setTasks, setSampleDataEnabled, toast]);
+  }, [setClients, setEvents, setVendors, setGuests, setExpenses, setTasks, setTimelines, setBudgets, setActivities, setSampleDataEnabled, toast]);
 
   const clearAllData = useCallback(() => {
-    setEvents([]); setClients([]); setVendors([]); setInvoices([]);
-    setGuests([]); setExpenses([]); setTimelines([]); setBudgets([]);
-    setActivities([]); setTasks([]);
+    setGuests([]); setExpenses([]); setTasks([]);
+    setVendors([]); setEvents([]); setClients([]);
+    setTimelines([]); setBudgets([]); setActivities([]);
     toast("All data cleared");
-  }, [setEvents, setClients, setVendors, setInvoices, setGuests, setExpenses, setTimelines, setBudgets, setActivities, setTasks, toast]);
+  }, [setGuests, setExpenses, setTasks, setVendors, setEvents, setClients, setTimelines, setBudgets, setActivities, toast]);
 
   const toggleSampleData = useCallback(() => {
     if (sampleDataEnabled) { clearAllData(); setSampleDataEnabled(false); }
@@ -137,20 +176,6 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   const log = useCallback((text: string) => {
     setActivities(a => [{ id: uid(), text, time: new Date().toISOString() }, ...a].slice(0, 20));
   }, [setActivities]);
-
-  // Wire seed data
-  useEffect(() => {
-    if (events.length > 0 && clients.length > 0 && guests.length > 0 && guests[0]?.eventId === "") {
-      const eIds = events.map(e => e.id);
-      const cIds = clients.map(c => c.id);
-      setEvents(ev => ev.map((e, i) => ({ ...e, clientId: cIds[i % cIds.length] })));
-      setGuests(g => g.map((x, i) => ({ ...x, eventId: eIds[i % eIds.length] })));
-      setInvoices(inv => inv.map((x, i) => ({ ...x, clientId: cIds[i % cIds.length], eventId: eIds[i % eIds.length] })));
-      setVendors(v => v.map((x, i) => ({ ...x, eventIds: [eIds[i % eIds.length]] })));
-      setExpenses(ex => ex.map((x, i) => ({ ...x, eventId: eIds[i % eIds.length] })));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const allNavItems: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -314,7 +339,8 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
 
       {currentUser.role === "admin" && (
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
-          sampleDataEnabled={sampleDataEnabled} onToggleSampleData={toggleSampleData} onResetData={resetAllData} toast={toast} />
+          sampleDataEnabled={sampleDataEnabled} onToggleSampleData={toggleSampleData} onResetData={resetAllData}
+          onImported={refreshAll} toast={toast} />
       )}
     </div>
   );
