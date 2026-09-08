@@ -3,6 +3,7 @@ import { usePortalData } from "@/hooks/usePortalData";
 import { PortalLogin } from "@/views/portal/PortalLogin";
 import { PortalEventList } from "@/views/portal/PortalEventList";
 import { PortalInvoiceTable } from "@/views/portal/PortalInvoices";
+import { PortalMoodBoards } from "@/views/portal/PortalMoodBoards";
 import logo from "@/assets/revouxaynce-logo.svg";
 import { SkeletonLines, SkeletonTable } from "@/components/app/Skeleton";
 
