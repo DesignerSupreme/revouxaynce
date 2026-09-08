@@ -4,14 +4,13 @@ import {
   LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal, ClipboardList
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
-import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Task } from "@/types";
+import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Invoice, Milestone } from "@/types";
 import { uid } from "@/lib/helpers";
-import { markOverdueInvoices } from "@/lib/dataService";
-import {
-  seedEvents, seedClients, seedVendors, seedInvoices,
-  seedGuests, seedExpenses, seedTeam, seedTasks,
-} from "@/lib/seedData";
+import { seedTeam, buildSeedDataset } from "@/lib/seedData";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSupabaseCollection } from "@/hooks/useSupabaseCollection";
+import { clientMapper, eventMapper, expenseMapper, guestMapper, taskMapper, vendorMapper } from "@/lib/dbMappers";
+import { useInvoices } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { ToastProvider, ToastCtx } from "@/components/app/Toast";
