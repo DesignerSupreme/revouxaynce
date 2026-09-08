@@ -12,6 +12,8 @@ import {
   seedGuests, seedExpenses, seedTeam, seedTasks,
 } from "@/lib/seedData";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import { ToastProvider, ToastCtx } from "@/components/app/Toast";
 import { LoginPage } from "@/components/app/LoginPage";
 import { SettingsPanel } from "@/components/app/SettingsPanel";
@@ -28,33 +30,49 @@ import { TasksView } from "@/views/TasksView";
 // ═══════════════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════
+const ALL_SECTIONS = ["dashboard", "events", "clients", "vendors", "finances", "expenses", "guests", "team"];
+
 const Revouxaynce = () => {
   const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v5", seedTeam);
-  const [currentUser, setCurrentUser] = useState<TeamMember | null>(() => {
-    try { const s = localStorage.getItem("currentUser"); return s ? JSON.parse(s) : null; } catch { return null; }
-  });
-
-  const handleLogin = (member: TeamMember) => {
-    setCurrentUser(member);
-    localStorage.setItem("currentUser", JSON.stringify(member));
-  };
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("currentUser");
-  };
+  const [session, setSession] = useState<Session | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
-      const updated = team.find(m => m.id === currentUser.id);
-      if (updated && JSON.stringify(updated) !== JSON.stringify(currentUser)) {
-        setCurrentUser(updated);
-        localStorage.setItem("currentUser", JSON.stringify(updated));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setAuthReady(true);
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setAuthReady(true);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = () => { void supabase.auth.signOut(); };
+
+  const email = session?.user?.email ?? "";
+  const profile = team.find(m => m.email.toLowerCase() === email.toLowerCase());
+  const currentUser: TeamMember | null = session
+    ? profile ?? {
+        id: session.user.id,
+        name: (session.user.user_metadata?.full_name as string) || email.split("@")[0],
+        email,
+        role: "admin",
+        access: ALL_SECTIONS,
       }
-    }
-  }, [team, currentUser]);
+    : null;
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-sm font-sans text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
 
   if (!currentUser) {
-    return <LoginPage onLogin={handleLogin} team={team} />;
+    return <LoginPage />;
   }
 
   return <AppShell currentUser={currentUser} onLogout={handleLogout} team={team} setTeam={setTeam} />;

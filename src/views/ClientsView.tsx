@@ -8,6 +8,7 @@ import { Badge } from "@/components/app/Badge";
 import { Empty } from "@/components/app/Empty";
 import { ConfirmDelete } from "@/components/app/ConfirmDelete";
 import { FadeInUp } from "@/components/app/FadeInUp";
+import { PortalLinksPanel } from "@/components/app/PortalLinksPanel";
 
 interface ClientsViewProps {
   clients: Client[];
@@ -93,6 +94,8 @@ export function ClientsView({ clients, setClients, events, log, toast }: Clients
           <Btn onClick={() => { setEditing(null); setModal(true); }}><Plus size={14} className="inline mr-1" /> New</Btn>
         </div>
       </div>
+      <PortalLinksPanel toast={toast} />
+
       {view === "table" ? (
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-sm font-sans min-w-[640px]">

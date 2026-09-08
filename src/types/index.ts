@@ -110,7 +110,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  password: string;
+  
   role: "admin" | "member";
   access: string[];
 }

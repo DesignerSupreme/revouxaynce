@@ -86,6 +86,8 @@ export type Database = {
           notes: Json | null
           phone: string | null
           portal_token: string | null
+          portal_token_expires_at: string | null
+          portal_token_rotated_at: string | null
           status: string | null
           updated_at: string
         }
@@ -98,6 +100,8 @@ export type Database = {
           notes?: Json | null
           phone?: string | null
           portal_token?: string | null
+          portal_token_expires_at?: string | null
+          portal_token_rotated_at?: string | null
           status?: string | null
           updated_at?: string
         }
@@ -110,6 +114,8 @@ export type Database = {
           notes?: Json | null
           phone?: string | null
           portal_token?: string | null
+          portal_token_expires_at?: string | null
+          portal_token_rotated_at?: string | null
           status?: string | null
           updated_at?: string
         }
@@ -325,10 +331,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      backfill_portal_tokens: { Args: never; Returns: number }
       current_portal_token: { Args: never; Returns: string }
       mark_overdue_invoices: { Args: never; Returns: undefined }
       portal_client_access: { Args: { _client_id: string }; Returns: boolean }
+      portal_current_client: {
+        Args: never
+        Returns: {
+          email: string
+          id: string
+          name: string
+          phone: string
+        }[]
+      }
       portal_invoice_access: { Args: { _invoice_id: string }; Returns: boolean }
+      rotate_portal_token: { Args: { p_client_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

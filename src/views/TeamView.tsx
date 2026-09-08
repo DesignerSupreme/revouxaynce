@@ -28,7 +28,7 @@ export function TeamView({ team, setTeam, currentUser, toast, log }: TeamViewPro
     const fd = new FormData(e.currentTarget);
     const name = fd.get("name") as string;
     const email = fd.get("email") as string;
-    const password = fd.get("password") as string;
+    
     const role = fd.get("role") as "admin" | "member";
     const access = allSections.filter(s => fd.get(`access_${s}`) === "on");
 
@@ -38,11 +38,10 @@ export function TeamView({ team, setTeam, currentUser, toast, log }: TeamViewPro
     }
 
     if (editing) {
-      setTeam(t => t.map(m => m.id === editing.id ? { ...m, name, email, password: password || m.password, role, access } : m));
+      setTeam(t => t.map(m => m.id === editing.id ? { ...m, name, email, role, access } : m));
       toast("Team member updated"); log(`Updated team member: ${name}`);
     } else {
-      if (!password) { toast("Password is required"); return; }
-      setTeam(t => [...t, { id: uid(), name, email, password, role, access }]);
+      setTeam(t => [...t, { id: uid(), name, email, role, access }]);
       toast("Team member added"); log(`Added team member: ${name}`);
     }
     setModal(false); setEditing(null);
@@ -115,7 +114,7 @@ export function TeamView({ team, setTeam, currentUser, toast, log }: TeamViewPro
         <form onSubmit={save}>
           <FormInput label="Full Name" name="name" defaultValue={editing?.name} required />
           <FormInput label="Email" name="email" type="email" defaultValue={editing?.email} required />
-          <FormInput label={editing ? "Password (leave blank to keep)" : "Password"} name="password" type="password" defaultValue="" required={!editing} />
+          <p className="text-xs text-muted-foreground font-sans mb-3">Sign-in details are managed by the account system. Ask the person to sign up with this email address.</p>
           <FormSelect label="Role" name="role" options={["admin", "member"]} defaultValue={editing?.role || "member"} />
 
           <div className="mb-3">
