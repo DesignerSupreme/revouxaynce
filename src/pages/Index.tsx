@@ -339,7 +339,8 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
 
       {currentUser.role === "admin" && (
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
-          sampleDataEnabled={sampleDataEnabled} onToggleSampleData={toggleSampleData} onResetData={resetAllData} toast={toast} />
+          sampleDataEnabled={sampleDataEnabled} onToggleSampleData={toggleSampleData} onResetData={resetAllData}
+          onImported={refreshAll} toast={toast} />
       )}
     </div>
   );
