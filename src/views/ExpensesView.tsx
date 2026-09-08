@@ -208,7 +208,7 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-sm font-sans min-w-[640px]">
             <thead><tr className="border-b border-foreground text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="py-2 pr-4 pl-4 sm:pl-0">Date</th><th className="py-2 pr-4">Vendor</th><th className="py-2 pr-4">Category</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Event</th><th className="py-2 w-20"></th>
+              <th className="py-2 pr-4 pl-4 sm:pl-0">Date</th><th className="py-2 pr-4">Vendor</th><th className="py-2 pr-4">Category</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Payment</th><th className="py-2 pr-4">Event</th><th className="py-2 w-20"></th>
             </tr></thead>
             <tbody>
               {filtered.map((ex, i) => {
@@ -218,7 +218,11 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
                     <td className="py-2 pr-4 pl-4 sm:pl-0">{shortDate(ex.date)}</td>
                     <td className="py-2 pr-4 font-semibold">{ex.vendor}</td>
                     <td className="py-2 pr-4">{ex.category}</td>
-                    <td className="py-2 pr-4 text-right">{fmt$(ex.amount)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">
+                      {fmtMoney(ex.amount, ex.currency || "USD")}
+                      {(ex.currency && ex.currency !== "USD") && <span className="block text-xs text-muted-foreground">≈ {fmtMoney(usd(ex))}</span>}
+                    </td>
+                    <td className="py-2 pr-4 text-xs uppercase tracking-wider">{ex.paid ? "Paid" : "Unpaid"}</td>
                     <td className="py-2 pr-4">{ev?.name || "—"}</td>
                     <td className="py-2">
                       {deleting === ex.id ? <ConfirmDelete onConfirm={() => remove(ex.id)} onCancel={() => setDeleting(null)} /> : (
@@ -241,6 +245,10 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormInput label="Date" name="date" type="date" defaultValue={editing?.date || new Date().toISOString().slice(0, 10)} required />
             <FormInput label="Amount" name="amount" type="number" step="0.01" defaultValue={editing?.amount} required />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormSelect label="Currency" name="currency" options={CURRENCIES as unknown as string[]} defaultValue={editing?.currency || "USD"} />
+            <FormSelect label="Payment" name="paid" options={["Unpaid", "Paid"]} defaultValue={editing?.paid ? "Paid" : "Unpaid"} />
           </div>
           <FormInput label="Vendor" name="vendor" defaultValue={editing?.vendor} required />
           <FormSelect label="Category" name="category" options={categories} defaultValue={editing?.category} />
