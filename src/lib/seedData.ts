@@ -110,7 +110,7 @@ export const seedExpenses = (): Expense[] => [
 ];
 
 export const seedTeam = (): TeamMember[] => [
-  { id: TEAM_IDS.chido, name: "Chido Nyakanda", email: "nyakandachido@gmail.com", password: "m@n@n@5", role: "admin", access: ["dashboard","events","clients","vendors","finances","expenses","guests","team"] },
+  { id: TEAM_IDS.chido, name: "Chido Nyakanda", email: "nyakandachido@gmail.com", role: "admin", access: ["dashboard","events","clients","vendors","finances","expenses","guests","team"] },
 ];
 
 export const seedTasks = (): Task[] => [
