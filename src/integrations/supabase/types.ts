@@ -86,6 +86,7 @@ export type Database = {
           name: string
           notes: Json | null
           phone: string | null
+          pipeline_stage: string | null
           portal_token: string | null
           portal_token_expires_at: string | null
           portal_token_rotated_at: string | null
@@ -101,6 +102,7 @@ export type Database = {
           name: string
           notes?: Json | null
           phone?: string | null
+          pipeline_stage?: string | null
           portal_token?: string | null
           portal_token_expires_at?: string | null
           portal_token_rotated_at?: string | null
@@ -116,6 +118,7 @@ export type Database = {
           name?: string
           notes?: Json | null
           phone?: string | null
+          pipeline_stage?: string | null
           portal_token?: string | null
           portal_token_expires_at?: string | null
           portal_token_rotated_at?: string | null
@@ -185,8 +188,10 @@ export type Database = {
           amount: number
           category: string
           created_at: string
+          currency: string | null
           deleted_at: string | null
           event_id: string | null
+          fx_rate: number | null
           id: string
           notes: string
           paid: boolean
@@ -200,8 +205,10 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          currency?: string | null
           deleted_at?: string | null
           event_id?: string | null
+          fx_rate?: number | null
           id?: string
           notes?: string
           paid?: boolean
@@ -215,8 +222,10 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          currency?: string | null
           deleted_at?: string | null
           event_id?: string | null
+          fx_rate?: number | null
           id?: string
           notes?: string
           paid?: boolean
@@ -245,10 +254,50 @@ export type Database = {
             foreignKeyName: "expenses_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
+            referencedRelation: "vendor_payables"
+            referencedColumns: ["vendor_id"]
+          },
+          {
+            foreignKeyName: "expenses_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
             referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
+      }
+      fx_rates: {
+        Row: {
+          base_currency: string
+          created_at: string
+          id: string
+          note: string
+          quote_currency: string
+          rate: number
+          rate_date: string
+          updated_at: string
+        }
+        Insert: {
+          base_currency?: string
+          created_at?: string
+          id?: string
+          note?: string
+          quote_currency: string
+          rate: number
+          rate_date?: string
+          updated_at?: string
+        }
+        Update: {
+          base_currency?: string
+          created_at?: string
+          id?: string
+          note?: string
+          quote_currency?: string
+          rate?: number
+          rate_date?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       guests: {
         Row: {
@@ -345,6 +394,7 @@ export type Database = {
           billing_type: string | null
           client_id: string | null
           created_at: string
+          currency: string | null
           deleted_at: string | null
           discount_amount: number | null
           discount_type: string | null
@@ -352,6 +402,7 @@ export type Database = {
           due_date: string
           due_on: string | null
           event_id: string | null
+          fx_rate: number | null
           id: string
           internal_notes: string | null
           last_sent_at: string | null
@@ -369,6 +420,7 @@ export type Database = {
           billing_type?: string | null
           client_id?: string | null
           created_at?: string
+          currency?: string | null
           deleted_at?: string | null
           discount_amount?: number | null
           discount_type?: string | null
@@ -376,6 +428,7 @@ export type Database = {
           due_date: string
           due_on?: string | null
           event_id?: string | null
+          fx_rate?: number | null
           id?: string
           internal_notes?: string | null
           last_sent_at?: string | null
@@ -393,6 +446,7 @@ export type Database = {
           billing_type?: string | null
           client_id?: string | null
           created_at?: string
+          currency?: string | null
           deleted_at?: string | null
           discount_amount?: number | null
           discount_type?: string | null
@@ -400,6 +454,7 @@ export type Database = {
           due_date?: string
           due_on?: string | null
           event_id?: string | null
+          fx_rate?: number | null
           id?: string
           internal_notes?: string | null
           last_sent_at?: string | null
@@ -642,6 +697,19 @@ export type Database = {
           },
         ]
       }
+      vendor_payables: {
+        Row: {
+          billed: number | null
+          category: string | null
+          last_activity: string | null
+          open_items: number | null
+          outstanding: number | null
+          settled: number | null
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       backfill_portal_tokens: { Args: never; Returns: number }
@@ -663,6 +731,7 @@ export type Database = {
       can_assist: { Args: never; Returns: boolean }
       can_write: { Args: never; Returns: boolean }
       current_portal_token: { Args: never; Returns: string }
+      fx_rate_on: { Args: { _currency: string; _on?: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
