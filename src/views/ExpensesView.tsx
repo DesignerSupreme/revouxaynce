@@ -11,6 +11,9 @@ import { ConfirmDelete } from "@/components/app/ConfirmDelete";
 import { FadeInUp } from "@/components/app/FadeInUp";
 import { AnimatedNumber } from "@/components/app/AnimatedNumber";
 import { BarChart, HBarChart, LineChart } from "@/components/app/Charts";
+import { CURRENCIES, fmtMoney, toUsd } from "@/lib/currency";
+import { useFxRates } from "@/hooks/useFxRates";
+import { FxRatesPanel } from "@/components/app/FxRatesPanel";
 
 interface ExpensesViewProps {
   expenses: Expense[];
@@ -21,6 +24,7 @@ interface ExpensesViewProps {
 }
 
 export function ExpensesView({ expenses, setExpenses, events, log, toast }: ExpensesViewProps) {
+  const { rateOn } = useFxRates();
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
   const [scanModal, setScanModal] = useState(false);
@@ -37,22 +41,24 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
     if (catFilter && e.category !== catFilter) return false;
     return true;
   });
-  const totalFiltered = filtered.reduce((s, e) => s + e.amount, 0);
+  const usd = (e: Expense) => toUsd(e.amount, e.fxRate);
+  const totalFiltered = filtered.reduce((s, e) => s + usd(e), 0);
+  const unpaidTotal = filtered.filter(e => !e.paid).reduce((s, e) => s + usd(e), 0);
 
   const byCat: Record<string, number> = {};
-  filtered.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
+  filtered.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + usd(e); });
   const catChartData = Object.entries(byCat).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 
   const byEvent: Record<string, number> = {};
   filtered.forEach(e => {
     const ev = events.find(x => x.id === e.eventId);
     const name = ev?.name || "Unassigned";
-    byEvent[name] = (byEvent[name] || 0) + e.amount;
+    byEvent[name] = (byEvent[name] || 0) + usd(e);
   });
   const eventChartData = Object.entries(byEvent).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 
   const byMonth: Record<string, number> = {};
-  filtered.forEach(e => { const m = e.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + e.amount; });
+  filtered.forEach(e => { const m = e.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + usd(e); });
   const trendData = Object.entries(byMonth).sort().map(([label, value]) => ({
     label: new Date(label + "-01").toLocaleDateString("en-US", { month: "short" }), value
   }));
@@ -62,12 +68,16 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
     const amount = parseFloat(obj.amount) || 0;
+    const date = obj.date || new Date().toISOString().slice(0, 10);
+    const currency = obj.currency || "USD";
+    const fxRate = rateOn(currency, date);
+    const paid = obj.paid === "Paid";
     if (editing) {
-      setExpenses(ex => ex.map(x => x.id === editing.id ? { ...x, date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: x.receiptUrl } : x));
-      toast("Expense updated"); log(`Updated expense: ${obj.vendor} ${fmt$(amount)}`);
+      setExpenses(ex => ex.map(x => x.id === editing.id ? { ...x, date, vendor: obj.vendor || "", category: obj.category || "", amount, currency, fxRate, paid, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: x.receiptUrl } : x));
+      toast("Expense updated"); log(`Updated expense: ${obj.vendor} ${fmtMoney(amount, currency)}`);
     } else {
-      setExpenses(ex => [...ex, { id: uid(), date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: "" }]);
-      toast("Expense added"); log(`Added expense: ${obj.vendor} ${fmt$(amount)}`);
+      setExpenses(ex => [...ex, { id: uid(), date, vendor: obj.vendor || "", category: obj.category || "", amount, currency, fxRate, paid, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: "" }]);
+      toast("Expense added"); log(`Added expense: ${obj.vendor} ${fmtMoney(amount, currency)}`);
     }
     setModal(false); setEditing(null);
   };
