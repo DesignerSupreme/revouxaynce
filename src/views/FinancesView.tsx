@@ -29,7 +29,7 @@ interface FinancesViewProps {
 }
 
 function toClient(c: DbClient): Client {
-  return { id: c.id, name: c.name, email: c.email, phone: c.phone || "", eventType: c.event_type || "", status: c.status || "Active", notes: Array.isArray(c.notes) ? (c.notes as { text: string; date: string }[]) : [], portalToken: c.portal_token || undefined };
+  return { id: c.id, name: c.name, email: c.email, phone: c.phone || "", eventType: c.event_type || "", status: c.status || "Active", pipelineStage: ((c as unknown as {pipeline_stage?: string}).pipeline_stage || "Enquiry") as Client["pipelineStage"], notes: Array.isArray(c.notes) ? (c.notes as { text: string; date: string }[]) : [], portalToken: c.portal_token || undefined };
 }
 function toEvent(e: DbEvent): Event {
   return { id: e.id, name: e.name, date: e.date, time: e.time || "", venue: e.venue || "", clientId: e.client_id || "", status: e.status || "Planning", notes: e.notes || "" };

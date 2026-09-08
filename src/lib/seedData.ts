@@ -77,12 +77,12 @@ export const seedEvents = (): Event[] => [
 ];
 
 export const seedClients = (): Client[] => [
-  { id: CLIENT_IDS.tariro, name: "Tariro Moyo", email: "tariro@moyo.co.zw", phone: "+263 77 200 1001", eventType: "Gala", status: "Confirmed", notes: [{ text: "Prefers monochrome florals", date: "2026-04-01" }] },
-  { id: CLIENT_IDS.james, name: "James Whitmore", email: "james@whitmore.co.uk", phone: "+44 7700 900202", eventType: "Wedding", status: "Quoted", notes: [] },
-  { id: CLIENT_IDS.rutendo, name: "Rutendo Chigumba", email: "rutendo@chigumba.co.zw", phone: "+263 71 300 0303", eventType: "Corporate", status: "Inquiry", notes: [] },
-  { id: CLIENT_IDS.tendai, name: "Tendai Ndlovu", email: "tendai@ndlovu.co.zw", phone: "+263 77 400 5050", eventType: "Product Launch", status: "Confirmed", notes: [{ text: "Wants tech-forward staging", date: "2026-03-20" }] },
-  { id: CLIENT_IDS.sophie, name: "Sophie Lancaster", email: "sophie@lancaster.co.uk", phone: "+44 7911 223344", eventType: "Anniversary", status: "Confirmed", notes: [{ text: "Gold and ivory palette", date: "2026-03-15" }] },
-  { id: CLIENT_IDS.nyasha, name: "Nyasha Garwe", email: "nyasha@garwe.co.zw", phone: "+263 78 600 7070", eventType: "Birthday", status: "Quoted", notes: [] },
+  { id: CLIENT_IDS.tariro, name: "Tariro Moyo", email: "tariro@moyo.co.zw", phone: "+263 77 200 1001", eventType: "Gala", status: "Confirmed", pipelineStage: "Booked", notes: [{ text: "Prefers monochrome florals", date: "2026-04-01" }] },
+  { id: CLIENT_IDS.james, name: "James Whitmore", email: "james@whitmore.co.uk", phone: "+44 7700 900202", eventType: "Wedding", status: "Quoted", pipelineStage: "Quoted", notes: [] },
+  { id: CLIENT_IDS.rutendo, name: "Rutendo Chigumba", email: "rutendo@chigumba.co.zw", phone: "+263 71 300 0303", eventType: "Corporate", status: "Inquiry", pipelineStage: "Enquiry", notes: [] },
+  { id: CLIENT_IDS.tendai, name: "Tendai Ndlovu", email: "tendai@ndlovu.co.zw", phone: "+263 77 400 5050", eventType: "Product Launch", status: "Confirmed", pipelineStage: "Booked", notes: [{ text: "Wants tech-forward staging", date: "2026-03-20" }] },
+  { id: CLIENT_IDS.sophie, name: "Sophie Lancaster", email: "sophie@lancaster.co.uk", phone: "+44 7911 223344", eventType: "Anniversary", status: "Confirmed", pipelineStage: "Delivered", notes: [{ text: "Gold and ivory palette", date: "2026-03-15" }] },
+  { id: CLIENT_IDS.nyasha, name: "Nyasha Garwe", email: "nyasha@garwe.co.zw", phone: "+263 78 600 7070", eventType: "Birthday", status: "Quoted", pipelineStage: "Quoted", notes: [] },
 ];
 
 export const seedVendors = (): Vendor[] => [
@@ -122,16 +122,16 @@ export const seedGuests = (): Guest[] => [
 ];
 
 export const seedExpenses = (): Expense[] => [
-  { id: "ex-001", date: "2026-04-02", vendor: "Ruva Florals", category: "Florals", amount: 3200, eventId: EVENT_IDS.moyoGala, notes: "Centerpiece arrangements", receiptUrl: "" },
-  { id: "ex-002", date: "2026-04-03", vendor: "Kudza Catering", category: "Catering", amount: 8500, eventId: EVENT_IDS.moyoGala, notes: "Tasting session deposit", receiptUrl: "" },
-  { id: "ex-003", date: "2026-03-28", vendor: "Harare Office Supplies", category: "Supplies", amount: 145.50, eventId: "", notes: "Printing & stationery", receiptUrl: "" },
-  { id: "ex-004", date: "2026-03-15", vendor: "Lux AV Systems", category: "AV", amount: 4200, eventId: EVENT_IDS.ndlovuLaunch, notes: "Sound system rental deposit", receiptUrl: "" },
-  { id: "ex-005", date: "2026-03-20", vendor: "Makanaka Décor", category: "Decor", amount: 6800, eventId: EVENT_IDS.fashionShow, notes: "Custom stage backdrop", receiptUrl: "" },
-  { id: "ex-006", date: "2026-04-05", vendor: "ZimTransit Luxury", category: "Transport", amount: 1500, eventId: EVENT_IDS.lancasterAnniv, notes: "VIP shuttle service", receiptUrl: "" },
-  { id: "ex-007", date: "2026-02-28", vendor: "Capture Studio", category: "Photography", amount: 3500, eventId: EVENT_IDS.chigumbaWed, notes: "Event photography package", receiptUrl: "" },
-  { id: "ex-008", date: "2026-04-01", vendor: "Oliver Bennett Catering", category: "Catering", amount: 12000, eventId: EVENT_IDS.lancasterAnniv, notes: "Full catering package", receiptUrl: "" },
-  { id: "ex-009", date: "2026-03-10", vendor: "BeatMasters DJs", category: "Entertainment", amount: 2200, eventId: EVENT_IDS.garweBirthday, notes: "DJ set + equipment", receiptUrl: "" },
-  { id: "ex-010", date: "2026-02-15", vendor: "Victoria Falls Hotel", category: "Venue", amount: 18000, eventId: EVENT_IDS.lancasterAnniv, notes: "Venue booking deposit", receiptUrl: "" },
+  { id: "ex-001", date: "2026-04-02", vendor: "Ruva Florals", category: "Florals", amount: 3200, currency: "USD", fxRate: 1, paid: true, eventId: EVENT_IDS.moyoGala, notes: "Centerpiece arrangements", receiptUrl: "" },
+  { id: "ex-002", date: "2026-04-03", vendor: "Kudza Catering", category: "Catering", amount: 8500, currency: "USD", fxRate: 1, paid: false, eventId: EVENT_IDS.moyoGala, notes: "Tasting session deposit", receiptUrl: "" },
+  { id: "ex-003", date: "2026-03-28", vendor: "Harare Office Supplies", category: "Supplies", amount: 145.50, currency: "USD", fxRate: 1, paid: true, eventId: "", notes: "Printing & stationery", receiptUrl: "" },
+  { id: "ex-004", date: "2026-03-15", vendor: "Lux AV Systems", category: "AV", amount: 4200, currency: "USD", fxRate: 1, paid: false, eventId: EVENT_IDS.ndlovuLaunch, notes: "Sound system rental deposit", receiptUrl: "" },
+  { id: "ex-005", date: "2026-03-20", vendor: "Makanaka Décor", category: "Decor", amount: 6800, currency: "USD", fxRate: 1, paid: true, eventId: EVENT_IDS.fashionShow, notes: "Custom stage backdrop", receiptUrl: "" },
+  { id: "ex-006", date: "2026-04-05", vendor: "ZimTransit Luxury", category: "Transport", amount: 1500, currency: "USD", fxRate: 1, paid: false, eventId: EVENT_IDS.lancasterAnniv, notes: "VIP shuttle service", receiptUrl: "" },
+  { id: "ex-007", date: "2026-02-28", vendor: "Capture Studio", category: "Photography", amount: 3500, currency: "USD", fxRate: 1, paid: true, eventId: EVENT_IDS.chigumbaWed, notes: "Event photography package", receiptUrl: "" },
+  { id: "ex-008", date: "2026-04-01", vendor: "Oliver Bennett Catering", category: "Catering", amount: 12000, currency: "GBP", fxRate: 1.27, paid: false, eventId: EVENT_IDS.lancasterAnniv, notes: "Full catering package", receiptUrl: "" },
+  { id: "ex-009", date: "2026-03-10", vendor: "BeatMasters DJs", category: "Entertainment", amount: 2200, currency: "USD", fxRate: 1, paid: true, eventId: EVENT_IDS.garweBirthday, notes: "DJ set + equipment", receiptUrl: "" },
+  { id: "ex-010", date: "2026-02-15", vendor: "Victoria Falls Hotel", category: "Venue", amount: 18000, currency: "USD", fxRate: 1, paid: false, eventId: EVENT_IDS.lancasterAnniv, notes: "Venue booking deposit", receiptUrl: "" },
 ];
 
 export const seedTeam = (): TeamMember[] => [

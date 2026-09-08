@@ -9,6 +9,7 @@ import { Empty } from "@/components/app/Empty";
 import { ConfirmDelete } from "@/components/app/ConfirmDelete";
 import { StarRating } from "@/components/app/StarRating";
 import { FadeInUp } from "@/components/app/FadeInUp";
+import { VendorPayables } from "@/components/app/VendorPayables";
 
 interface VendorsViewProps {
   vendors: Vendor[];
@@ -85,6 +86,7 @@ export function VendorsView({ vendors, setVendors, events, log, toast }: Vendors
           <Btn onClick={() => { setEditing(null); setModal(true); }}><Plus size={14} className="inline mr-1" /> New</Btn>
         </div>
       </div>
+      <VendorPayables />
       {filtered.length === 0 ? <Empty icon={Store} text="No vendors found." /> : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
           {filtered.map((v, i) => (

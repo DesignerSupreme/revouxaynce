@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Users, Plus, Edit, Trash2 } from "lucide-react";
-import type { Event, Client } from "@/types";
+import type { Event, Client, PipelineStage } from "@/types";
+import { CLIENT_PIPELINE } from "@/types";
 import { uid, shortDate } from "@/lib/helpers";
 import { Modal } from "@/components/app/Modal";
 import { FormInput, FormSelect, Btn } from "@/components/app/FormElements";
@@ -24,17 +25,19 @@ export function ClientsView({ clients, setClients, events, log, toast }: Clients
   const [detail, setDetail] = useState<string | null>(null);
   const [view, setView] = useState<"table" | "pipeline">("pipeline");
   const [deleting, setDeleting] = useState<string | null>(null);
-  const pipeline = ["Inquiry", "Quoted", "Confirmed", "Completed"];
+  const pipeline = CLIENT_PIPELINE as unknown as string[];
+  const stageOf = (c: Client): string => c.pipelineStage || "Enquiry";
 
   const save = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
+    const stage = (obj.pipelineStage || "Enquiry") as PipelineStage;
     if (editing) {
-      setClients(cs => cs.map(c => c.id === editing.id ? { ...c, name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", status: obj.status || "", notes: c.notes } : c));
+      setClients(cs => cs.map(c => c.id === editing.id ? { ...c, name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", pipelineStage: stage, notes: c.notes } : c));
       toast("Client updated"); log(`Updated client: ${obj.name}`);
     } else {
-      setClients(cs => [...cs, { id: uid(), name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", status: obj.status || "Inquiry", notes: [] }]);
+      setClients(cs => [...cs, { id: uid(), name: obj.name || "", email: obj.email || "", phone: obj.phone || "", eventType: obj.eventType || "", status: "Active", pipelineStage: stage, notes: [] }]);
       toast("Client created"); log(`Created client: ${obj.name}`);
     }
     setModal(false); setEditing(null);
@@ -54,7 +57,7 @@ export function ClientsView({ clients, setClients, events, log, toast }: Clients
     return (
       <div className="animate-fade-in">
         <button onClick={() => setDetail(null)} className="text-sm text-muted-foreground mb-4 font-sans hover:text-foreground transition-colors">← Back to Clients</button>
-        <h1 className="text-3xl mb-2">{c.name}</h1><Badge status={c.status} />
+        <h1 className="text-3xl mb-2">{c.name}</h1><Badge status={stageOf(c)} />
         <div className="mt-6 space-y-2 text-sm font-sans">
           <p><span className="text-muted-foreground">Email:</span> {c.email}</p>
           <p><span className="text-muted-foreground">Phone:</span> {c.phone}</p>
@@ -100,13 +103,13 @@ export function ClientsView({ clients, setClients, events, log, toast }: Clients
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-sm font-sans min-w-[640px]">
             <thead><tr className="border-b border-foreground text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="py-2 pr-4 pl-4 sm:pl-0">Name</th><th className="py-2 pr-4">Email</th><th className="py-2 pr-4">Type</th><th className="py-2 pr-4">Status</th><th className="py-2 w-20"></th>
+              <th className="py-2 pr-4 pl-4 sm:pl-0">Name</th><th className="py-2 pr-4">Email</th><th className="py-2 pr-4">Type</th><th className="py-2 pr-4">Stage</th><th className="py-2 w-20"></th>
             </tr></thead>
             <tbody>
               {clients.map((c, i) => (
                 <tr key={c.id} className={`cursor-pointer hover:bg-muted/50 transition-colors ${i % 2 === 1 ? "bg-muted/30" : ""}`} onClick={() => setDetail(c.id)}>
                   <td className="py-2 pr-4 pl-4 sm:pl-0 font-semibold">{c.name}</td><td className="py-2 pr-4">{c.email}</td>
-                  <td className="py-2 pr-4">{c.eventType}</td><td className="py-2 pr-4"><Badge status={c.status} /></td>
+                  <td className="py-2 pr-4">{c.eventType}</td><td className="py-2 pr-4"><Badge status={stageOf(c)} /></td>
                   <td className="py-2" onClick={e => e.stopPropagation()}>
                     {deleting === c.id ? <ConfirmDelete onConfirm={() => remove(c.id)} onCancel={() => setDeleting(null)} /> : (
                       <div className="flex gap-1"><button className="p-1 hover:bg-muted transition-colors" onClick={() => { setEditing(c); setModal(true); }}><Edit size={14} /></button><button className="p-1 hover:bg-muted transition-colors" onClick={() => setDeleting(c.id)}><Trash2 size={14} /></button></div>
@@ -118,13 +121,13 @@ export function ClientsView({ clients, setClients, events, log, toast }: Clients
           </table>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {pipeline.map(stage => (
             <div key={stage} className="border border-foreground" onDragOver={e => e.preventDefault()}
-              onDrop={e => { const id = e.dataTransfer.getData("clientId"); setClients(cs => cs.map(c => c.id === id ? { ...c, status: stage } : c)); toast(`Moved to ${stage}`); }}>
+              onDrop={e => { const id = e.dataTransfer.getData("clientId"); setClients(cs => cs.map(c => c.id === id ? { ...c, pipelineStage: stage as PipelineStage } : c)); toast(`Moved to ${stage}`); }}>
               <div className="border-b border-foreground px-4 py-2 text-xs uppercase tracking-wider font-sans bg-muted">{stage}</div>
               <div className="p-3 space-y-2 min-h-[100px]">
-                {clients.filter(c => c.status === stage).map(c => (
+                {clients.filter(c => stageOf(c) === stage).map(c => (
                   <div key={c.id} draggable onDragStart={e => e.dataTransfer.setData("clientId", c.id)} onClick={() => setDetail(c.id)}
                     className="border border-foreground p-3 cursor-grab hover:bg-muted/50 active:cursor-grabbing transition-colors">
                     <div className="font-semibold text-sm">{c.name}</div><div className="text-xs text-muted-foreground">{c.eventType}</div>
@@ -141,7 +144,7 @@ export function ClientsView({ clients, setClients, events, log, toast }: Clients
           <FormInput label="Email" name="email" type="email" defaultValue={editing?.email} />
           <FormInput label="Phone" name="phone" defaultValue={editing?.phone} />
           <FormInput label="Event Type" name="eventType" defaultValue={editing?.eventType} />
-          <FormSelect label="Status" name="status" options={pipeline} defaultValue={editing?.status || "Inquiry"} />
+          <FormSelect label="Stage" name="pipelineStage" options={pipeline} defaultValue={editing ? stageOf(editing) : "Enquiry"} />
           <div className="flex gap-3 mt-4"><Btn type="submit">Save</Btn><Btn variant="secondary" type="button" onClick={() => { setModal(false); setEditing(null); }}>Cancel</Btn></div>
         </form>
       </Modal>

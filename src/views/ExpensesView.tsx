@@ -11,6 +11,9 @@ import { ConfirmDelete } from "@/components/app/ConfirmDelete";
 import { FadeInUp } from "@/components/app/FadeInUp";
 import { AnimatedNumber } from "@/components/app/AnimatedNumber";
 import { BarChart, HBarChart, LineChart } from "@/components/app/Charts";
+import { CURRENCIES, fmtMoney, toUsd } from "@/lib/currency";
+import { useFxRates } from "@/hooks/useFxRates";
+import { FxRatesPanel } from "@/components/app/FxRatesPanel";
 
 interface ExpensesViewProps {
   expenses: Expense[];
@@ -21,6 +24,7 @@ interface ExpensesViewProps {
 }
 
 export function ExpensesView({ expenses, setExpenses, events, log, toast }: ExpensesViewProps) {
+  const { rateOn } = useFxRates();
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
   const [scanModal, setScanModal] = useState(false);
@@ -37,22 +41,24 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
     if (catFilter && e.category !== catFilter) return false;
     return true;
   });
-  const totalFiltered = filtered.reduce((s, e) => s + e.amount, 0);
+  const usd = (e: Expense) => toUsd(e.amount, e.fxRate);
+  const totalFiltered = filtered.reduce((s, e) => s + usd(e), 0);
+  const unpaidTotal = filtered.filter(e => !e.paid).reduce((s, e) => s + usd(e), 0);
 
   const byCat: Record<string, number> = {};
-  filtered.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
+  filtered.forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + usd(e); });
   const catChartData = Object.entries(byCat).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 
   const byEvent: Record<string, number> = {};
   filtered.forEach(e => {
     const ev = events.find(x => x.id === e.eventId);
     const name = ev?.name || "Unassigned";
-    byEvent[name] = (byEvent[name] || 0) + e.amount;
+    byEvent[name] = (byEvent[name] || 0) + usd(e);
   });
   const eventChartData = Object.entries(byEvent).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
 
   const byMonth: Record<string, number> = {};
-  filtered.forEach(e => { const m = e.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + e.amount; });
+  filtered.forEach(e => { const m = e.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + usd(e); });
   const trendData = Object.entries(byMonth).sort().map(([label, value]) => ({
     label: new Date(label + "-01").toLocaleDateString("en-US", { month: "short" }), value
   }));
@@ -62,12 +68,16 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
     const amount = parseFloat(obj.amount) || 0;
+    const date = obj.date || new Date().toISOString().slice(0, 10);
+    const currency = obj.currency || "USD";
+    const fxRate = rateOn(currency, date);
+    const paid = obj.paid === "Paid";
     if (editing) {
-      setExpenses(ex => ex.map(x => x.id === editing.id ? { ...x, date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: x.receiptUrl } : x));
-      toast("Expense updated"); log(`Updated expense: ${obj.vendor} ${fmt$(amount)}`);
+      setExpenses(ex => ex.map(x => x.id === editing.id ? { ...x, date, vendor: obj.vendor || "", category: obj.category || "", amount, currency, fxRate, paid, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: x.receiptUrl } : x));
+      toast("Expense updated"); log(`Updated expense: ${obj.vendor} ${fmtMoney(amount, currency)}`);
     } else {
-      setExpenses(ex => [...ex, { id: uid(), date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: "" }]);
-      toast("Expense added"); log(`Added expense: ${obj.vendor} ${fmt$(amount)}`);
+      setExpenses(ex => [...ex, { id: uid(), date, vendor: obj.vendor || "", category: obj.category || "", amount, currency, fxRate, paid, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: "" }]);
+      toast("Expense added"); log(`Added expense: ${obj.vendor} ${fmtMoney(amount, currency)}`);
     }
     setModal(false); setEditing(null);
   };
@@ -105,7 +115,7 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
     const amount = parseFloat(obj.amount) || 0;
-    setExpenses(ex => [...ex, { id: uid(), date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: obj.receiptUrl || "" }]);
+    setExpenses(ex => [...ex, { id: uid(), date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, currency: "USD", fxRate: 1, paid: false, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: obj.receiptUrl || "" }]);
     toast("Expense from receipt added"); log(`Scanned receipt: ${obj.vendor} ${fmt$(amount)}`);
     setScanModal(false); setScanResult(null);
   };
@@ -147,9 +157,12 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
         </select>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+      <FxRatesPanel toast={toast} />
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[
-          { label: "Total", value: totalFiltered, isMoney: true },
+          { label: "Total (USD)", value: totalFiltered, isMoney: true },
+          { label: "Unpaid (USD)", value: unpaidTotal, isMoney: true },
           { label: "Count", value: filtered.length },
           { label: "Avg / Expense", value: filtered.length > 0 ? totalFiltered / filtered.length : 0, isMoney: true },
         ].map((c, i) => (
@@ -195,7 +208,7 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-sm font-sans min-w-[640px]">
             <thead><tr className="border-b border-foreground text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="py-2 pr-4 pl-4 sm:pl-0">Date</th><th className="py-2 pr-4">Vendor</th><th className="py-2 pr-4">Category</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Event</th><th className="py-2 w-20"></th>
+              <th className="py-2 pr-4 pl-4 sm:pl-0">Date</th><th className="py-2 pr-4">Vendor</th><th className="py-2 pr-4">Category</th><th className="py-2 pr-4 text-right">Amount</th><th className="py-2 pr-4">Payment</th><th className="py-2 pr-4">Event</th><th className="py-2 w-20"></th>
             </tr></thead>
             <tbody>
               {filtered.map((ex, i) => {
@@ -205,7 +218,11 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
                     <td className="py-2 pr-4 pl-4 sm:pl-0">{shortDate(ex.date)}</td>
                     <td className="py-2 pr-4 font-semibold">{ex.vendor}</td>
                     <td className="py-2 pr-4">{ex.category}</td>
-                    <td className="py-2 pr-4 text-right">{fmt$(ex.amount)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">
+                      {fmtMoney(ex.amount, ex.currency || "USD")}
+                      {(ex.currency && ex.currency !== "USD") && <span className="block text-xs text-muted-foreground">≈ {fmtMoney(usd(ex))}</span>}
+                    </td>
+                    <td className="py-2 pr-4 text-xs uppercase tracking-wider">{ex.paid ? "Paid" : "Unpaid"}</td>
                     <td className="py-2 pr-4">{ev?.name || "—"}</td>
                     <td className="py-2">
                       {deleting === ex.id ? <ConfirmDelete onConfirm={() => remove(ex.id)} onCancel={() => setDeleting(null)} /> : (
@@ -228,6 +245,10 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormInput label="Date" name="date" type="date" defaultValue={editing?.date || new Date().toISOString().slice(0, 10)} required />
             <FormInput label="Amount" name="amount" type="number" step="0.01" defaultValue={editing?.amount} required />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormSelect label="Currency" name="currency" options={CURRENCIES as unknown as string[]} defaultValue={editing?.currency || "USD"} />
+            <FormSelect label="Payment" name="paid" options={["Unpaid", "Paid"]} defaultValue={editing?.paid ? "Paid" : "Unpaid"} />
           </div>
           <FormInput label="Vendor" name="vendor" defaultValue={editing?.vendor} required />
           <FormSelect label="Category" name="category" options={categories} defaultValue={editing?.category} />
