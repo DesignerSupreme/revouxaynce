@@ -106,13 +106,14 @@ export interface Expense {
   receiptUrl: string;
 }
 
+export type { Role } from "@/lib/permissions";
+
 export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  
-  role: "admin" | "member";
-  access: string[];
+  role: import("@/lib/permissions").Role;
+  access?: string[];
 }
 
 export interface Activity {

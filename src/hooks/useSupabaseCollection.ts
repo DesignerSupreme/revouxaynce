@@ -11,19 +11,35 @@ export interface Collection<T> {
   setItems: React.Dispatch<React.SetStateAction<T[]>>;
   loading: boolean;
   refresh: () => Promise<void>;
+  restore: (ids: string[]) => Promise<void>;
+}
+
+export interface CollectionOptions {
+  /** Fired after rows are soft-deleted, so the caller can offer an undo. */
+  onDeleted?: (count: number, undo: () => Promise<void>) => void;
 }
 
 /**
- * Drop-in replacement for useLocalStorage: exposes a [items, setItems] pair
+ * Drop-in replacement for useLocalStorage: exposes an [items, setItems] pair
  * but persists every change to Postgres by diffing the previous snapshot.
+ * Deletions are soft — rows keep a deleted_at stamp and can be restored.
  */
-export function useSupabaseCollection<T extends { id: string }>(mapper: Mapper<T>): Collection<T> {
+export function useSupabaseCollection<T extends { id: string }>(
+  mapper: Mapper<T>,
+  options: CollectionOptions = {},
+): Collection<T> {
   const [items, setLocal] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const snapshot = useRef<T[]>([]);
+  const opts = useRef(options);
+  opts.current = options;
 
   const refresh = useCallback(async () => {
-    const { data, error } = await db.from(mapper.table).select("*").order(mapper.orderBy, { ascending: true });
+    const { data, error } = await db
+      .from(mapper.table)
+      .select("*")
+      .is("deleted_at", null)
+      .order(mapper.orderBy, { ascending: true });
     if (error) {
       console.error(`[${mapper.table}] load failed`, error.message);
       setLoading(false);
@@ -38,6 +54,16 @@ export function useSupabaseCollection<T extends { id: string }>(mapper: Mapper<T
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const restore = useCallback(
+    async (ids: string[]) => {
+      if (!ids.length) return;
+      const { error } = await db.from(mapper.table).update({ deleted_at: null }).in("id", ids);
+      if (error) console.error(`[${mapper.table}] restore failed`, error.message);
+      await refresh();
+    },
+    [mapper, refresh],
+  );
 
   const sync = useCallback(
     async (prev: T[], next: T[]) => {
@@ -61,15 +87,19 @@ export function useSupabaseCollection<T extends { id: string }>(mapper: Mapper<T
           if (error) throw error;
         }
         if (deletes.length) {
-          const { error } = await db.from(mapper.table).delete().in("id", deletes);
+          const { error } = await db
+            .from(mapper.table)
+            .update({ deleted_at: new Date().toISOString() })
+            .in("id", deletes);
           if (error) throw error;
+          opts.current.onDeleted?.(deletes.length, () => restore(deletes));
         }
       } catch (err) {
         console.error(`[${mapper.table}] save failed`, err);
         void refresh();
       }
     },
-    [mapper, refresh],
+    [mapper, refresh, restore],
   );
 
   const setItems = useCallback<React.Dispatch<React.SetStateAction<T[]>>>(
@@ -83,5 +113,5 @@ export function useSupabaseCollection<T extends { id: string }>(mapper: Mapper<T
     [sync],
   );
 
-  return { items, setItems, loading, refresh };
+  return { items, setItems, loading, refresh, restore };
 }

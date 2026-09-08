@@ -6,8 +6,11 @@ import {
 import logo from "@/assets/revouxaynce-logo.svg";
 import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Invoice, Milestone } from "@/types";
 import { uid } from "@/lib/helpers";
-import { seedTeam, buildSeedDataset } from "@/lib/seedData";
+import { buildSeedDataset } from "@/lib/seedData";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useAuthRole } from "@/hooks/useAuthRole";
+import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { canEdit, canWrite, isAdmin as isAdminRole, ROLE_LABELS, type Role } from "@/lib/permissions";
 import { useSupabaseCollection } from "@/hooks/useSupabaseCollection";
 import { clientMapper, eventMapper, expenseMapper, guestMapper, taskMapper, vendorMapper } from "@/lib/dbMappers";
 import { useInvoices } from "@/hooks/useInvoices";
@@ -32,7 +35,6 @@ import { TasksView } from "@/views/TasksView";
 const ALL_SECTIONS = ["dashboard", "events", "clients", "vendors", "finances", "expenses", "guests", "team"];
 
 const Revouxaynce = () => {
-  const [team, setTeam] = useLocalStorage<TeamMember[]>("team_v5", seedTeam);
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
@@ -51,16 +53,8 @@ const Revouxaynce = () => {
   const handleLogout = () => { void supabase.auth.signOut(); };
 
   const email = session?.user?.email ?? "";
-  const profile = team.find(m => m.email.toLowerCase() === email.toLowerCase());
-  const currentUser: TeamMember | null = session
-    ? profile ?? {
-        id: session.user.id,
-        name: (session.user.user_metadata?.full_name as string) || email.split("@")[0],
-        email,
-        role: "admin",
-        access: ALL_SECTIONS,
-      }
-    : null;
+  const fallbackName = (session?.user?.user_metadata?.full_name as string) || email.split("@")[0];
+  const { profile, loading: roleLoading } = useAuthRole(session?.user?.id ?? null, email, fallbackName);
 
   if (!authReady) {
     return (
@@ -70,29 +64,51 @@ const Revouxaynce = () => {
     );
   }
 
-  if (!currentUser) {
-    return <LoginPage />;
+  if (!session) return <LoginPage />;
+
+  if (roleLoading || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-sm font-sans text-muted-foreground">Preparing your workspace…</p>
+      </div>
+    );
   }
 
-  return <AppShell currentUser={currentUser} onLogout={handleLogout} team={team} setTeam={setTeam} />;
+  const currentUser: TeamMember = {
+    id: profile.id,
+    name: profile.name,
+    email: profile.email,
+    role: profile.role,
+  };
+
+  return <AppShell currentUser={currentUser} onLogout={handleLogout} />;
 };
 
-function AppShell({ currentUser, onLogout, team, setTeam }: {
+function AppShell({ currentUser, onLogout }: {
   currentUser: TeamMember; onLogout: () => void;
-  team: TeamMember[]; setTeam: React.Dispatch<React.SetStateAction<TeamMember[]>>;
 }) {
+  const role: Role = currentUser.role;
+  const admin = isAdminRole(role);
   const [tab, setTab] = useState<Tab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sampleDataEnabled, setSampleDataEnabled] = useLocalStorage("sampleDataEnabled_v5", () => true);
 
+  const toastRef = React.useRef<(msg: string, action?: { label: string; onClick: () => void }) => void>(() => {});
+  const undoOptions = React.useCallback((label: string) => ({
+    onDeleted: (count: number, undo: () => Promise<void>) => {
+      toastRef.current(`${count} ${label}${count === 1 ? "" : "s"} removed`, { label: "Undo", onClick: () => { void undo(); } });
+    },
+  }), []);
+
   // Shared database collections (previously browser-only)
-  const clientsCol = useSupabaseCollection(clientMapper);
-  const eventsCol = useSupabaseCollection(eventMapper);
-  const vendorsCol = useSupabaseCollection(vendorMapper);
-  const guestsCol = useSupabaseCollection(guestMapper);
-  const expensesCol = useSupabaseCollection(expenseMapper);
-  const tasksCol = useSupabaseCollection(taskMapper);
+  const clientsCol = useSupabaseCollection(clientMapper, undoOptions("client"));
+  const eventsCol = useSupabaseCollection(eventMapper, undoOptions("event"));
+  const vendorsCol = useSupabaseCollection(vendorMapper, undoOptions("vendor"));
+  const guestsCol = useSupabaseCollection(guestMapper, undoOptions("guest"));
+  const expensesCol = useSupabaseCollection(expenseMapper, undoOptions("expense"));
+  const tasksCol = useSupabaseCollection(taskMapper, undoOptions("task"));
+  const { members: team } = useTeamMembers();
 
   const { items: clients, setItems: setClients } = clientsCol;
   const { items: events, setItems: setEvents } = eventsCol;
@@ -134,6 +150,18 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
   const [budgets, setBudgets] = useLocalStorage<BudgetItem[]>("budgets_v5", () => []);
   const [activities, setActivities] = useLocalStorage<Activity[]>("activities_v5", () => []);
   const toast = React.useContext(ToastCtx);
+  toastRef.current = toast;
+
+  /** Blocks writes for roles that may not change a section (the database enforces this too). */
+  const guard = React.useCallback(
+    <T,>(section: string, setter: React.Dispatch<React.SetStateAction<T>>): React.Dispatch<React.SetStateAction<T>> =>
+      (canEdit(role, section)
+        ? setter
+        : (() => {
+            toast(`Your ${ROLE_LABELS[role]} access is read-only for ${section}`);
+          }) as React.Dispatch<React.SetStateAction<T>>),
+    [role, toast],
+  );
   const [transitioning, setTransitioning] = useState(false);
 
   const refreshAll = useCallback(() => {
@@ -186,16 +214,12 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
     { key: "finances", label: "Finances", icon: DollarSign },
     { key: "expenses", label: "Expenses", icon: Receipt },
     { key: "guests", label: "Guests", icon: UserCheck },
-    ...(currentUser.role === "admin" ? [{ key: "team" as Tab, label: "Team", icon: Shield }] : []),
+    { key: "team" as Tab, label: "Team", icon: Shield },
   ];
 
-  const navItems = allNavItems.filter(n => currentUser.access.includes(n.key) || n.key === "team" || n.key === "tasks");
+  const navItems = allNavItems;
 
   const handleNav = (t: Tab) => {
-    if (!currentUser.access.includes(t) && t !== "team" && t !== "tasks") {
-      toast("You don't have access to this section");
-      return;
-    }
     setTransitioning(true);
     setTimeout(() => {
       setTab(t);
@@ -203,13 +227,6 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
       setTransitioning(false);
     }, 150);
   };
-
-  useEffect(() => {
-    if (!currentUser.access.includes(tab) && tab !== "team" && tab !== "tasks") {
-      const first = navItems[0]?.key || "dashboard";
-      setTab(first);
-    }
-  }, [currentUser, tab, navItems]);
 
   const mobileNavVisible = navItems.slice(0, 5);
   const mobileNavOverflow = navItems.slice(5);
@@ -241,7 +258,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold truncate">{currentUser.name}</div>
-              <div className="text-[10px] text-sidebar-foreground/50 uppercase">{currentUser.role}</div>
+              <div className="text-[10px] text-sidebar-foreground/50 uppercase">{ROLE_LABELS[role]}</div>
             </div>
           </div>
           <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
@@ -279,7 +296,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
           <button onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
           <img src={logo} alt="Revouxaynce" className="h-8 w-auto" />
           <div className="flex items-center gap-2">
-            {currentUser.role === "admin" && (
+            {admin && (
               <button onClick={() => setSettingsOpen(true)} className="p-1 hover:bg-muted transition-colors"><Settings size={18} /></button>
             )}
             <button onClick={onLogout}><LogOut size={18} /></button>
@@ -287,7 +304,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
         </div>
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
-          {currentUser.role === "admin" && (
+          {admin && (
             <div className="hidden md:flex justify-end mb-2">
               <button onClick={() => setSettingsOpen(true)} className="p-2 hover:bg-muted transition-all duration-200 hover:scale-105" title="Settings">
                 <Settings size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
@@ -295,16 +312,23 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
             </div>
           )}
 
+          {!canWrite(role) && (
+            <div className="mb-4 border border-foreground px-3 py-2 text-xs font-sans">
+              <span className="uppercase tracking-wider font-semibold">{ROLE_LABELS[role]}</span>
+              <span className="text-muted-foreground"> — {role === "assistant" ? "you can change tasks, guests and expenses only." : "you have read-only access."}</span>
+            </div>
+          )}
+
           <div className={`transition-all duration-150 ${transitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}>
             {tab === "dashboard" && <DashboardView events={events} clients={clients} invoices={invoices} guests={guests} expenses={expenses} activities={activities} vendors={vendors} timelines={timelines} budgets={budgets} setTab={handleNav} />}
-            {tab === "events" && <EventsView events={events} setEvents={setEvents} clients={clients} vendors={vendors} guests={guests} setGuests={setGuests} timelines={timelines} setTimelines={setTimelines} budgets={budgets} setBudgets={setBudgets} log={log} toast={toast} />}
-            {tab === "tasks" && <TasksView tasks={tasks} setTasks={setTasks} events={events} team={team} log={log} toast={toast} />}
-            {tab === "clients" && <ClientsView clients={clients} setClients={setClients} events={events} log={log} toast={toast} />}
-            {tab === "vendors" && <VendorsView vendors={vendors} setVendors={setVendors} events={events} log={log} toast={toast} />}
+            {tab === "events" && <EventsView events={events} setEvents={guard("events", setEvents)} clients={clients} vendors={vendors} guests={guests} setGuests={guard("guests", setGuests)} timelines={timelines} setTimelines={guard("events", setTimelines)} budgets={budgets} setBudgets={guard("events", setBudgets)} log={log} toast={toast} />}
+            {tab === "tasks" && <TasksView tasks={tasks} setTasks={guard("tasks", setTasks)} events={events} team={team} log={log} toast={toast} />}
+            {tab === "clients" && <ClientsView clients={clients} setClients={guard("clients", setClients)} events={events} log={log} toast={toast} />}
+            {tab === "vendors" && <VendorsView vendors={vendors} setVendors={guard("vendors", setVendors)} events={events} log={log} toast={toast} />}
             {tab === "finances" && <FinancesView expenses={expenses} budgets={budgets} log={log} toast={toast} />}
-            {tab === "expenses" && <ExpensesView expenses={expenses} setExpenses={setExpenses} events={events} log={log} toast={toast} />}
-            {tab === "guests" && <GuestsView guests={guests} setGuests={setGuests} events={events} log={log} toast={toast} />}
-            {tab === "team" && currentUser.role === "admin" && <TeamView team={team} setTeam={setTeam} currentUser={currentUser} toast={toast} log={log} />}
+            {tab === "expenses" && <ExpensesView expenses={expenses} setExpenses={guard("expenses", setExpenses)} events={events} log={log} toast={toast} />}
+            {tab === "guests" && <GuestsView guests={guests} setGuests={guard("guests", setGuests)} events={events} log={log} toast={toast} />}
+            {tab === "team" && <TeamView currentUserId={currentUser.id} currentRole={role} toast={toast} log={log} />}
           </div>
         </div>
       </main>
@@ -337,7 +361,7 @@ function AppShell({ currentUser, onLogout, team, setTeam }: {
         )}
       </nav>
 
-      {currentUser.role === "admin" && (
+      {admin && (
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
           sampleDataEnabled={sampleDataEnabled} onToggleSampleData={toggleSampleData} onResetData={resetAllData}
           onImported={refreshAll} toast={toast} />

@@ -79,6 +79,7 @@ export type Database = {
       clients: {
         Row: {
           created_at: string
+          deleted_at: string | null
           email: string
           event_type: string | null
           id: string
@@ -93,6 +94,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           email: string
           event_type?: string | null
           id?: string
@@ -107,6 +109,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           email?: string
           event_type?: string | null
           id?: string
@@ -126,6 +129,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           date: string
+          deleted_at: string | null
           event_date: string | null
           event_time: string | null
           id: string
@@ -140,6 +144,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date: string
+          deleted_at?: string | null
           event_date?: string | null
           event_time?: string | null
           id?: string
@@ -154,6 +159,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date?: string
+          deleted_at?: string | null
           event_date?: string | null
           event_time?: string | null
           id?: string
@@ -179,6 +185,7 @@ export type Database = {
           amount: number
           category: string
           created_at: string
+          deleted_at: string | null
           event_id: string | null
           id: string
           notes: string
@@ -193,6 +200,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          deleted_at?: string | null
           event_id?: string | null
           id?: string
           notes?: string
@@ -207,6 +215,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          deleted_at?: string | null
           event_id?: string | null
           id?: string
           notes?: string
@@ -237,6 +246,7 @@ export type Database = {
       guests: {
         Row: {
           created_at: string
+          deleted_at: string | null
           dietary: string
           email: string
           event_id: string | null
@@ -249,6 +259,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           dietary?: string
           email?: string
           event_id?: string | null
@@ -261,6 +272,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           dietary?: string
           email?: string
           event_id?: string | null
@@ -319,6 +331,7 @@ export type Database = {
           billing_type: string | null
           client_id: string | null
           created_at: string
+          deleted_at: string | null
           discount_amount: number | null
           discount_type: string | null
           discount_value: number | null
@@ -342,6 +355,7 @@ export type Database = {
           billing_type?: string | null
           client_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           discount_amount?: number | null
           discount_type?: string | null
           discount_value?: number | null
@@ -365,6 +379,7 @@ export type Database = {
           billing_type?: string | null
           client_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           discount_amount?: number | null
           discount_type?: string | null
           discount_value?: number | null
@@ -442,11 +457,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assignee_id: string
           completed: boolean
           created_at: string
+          deleted_at: string | null
           due_on: string | null
           event_id: string | null
           id: string
@@ -459,6 +499,7 @@ export type Database = {
           assignee_id?: string
           completed?: boolean
           created_at?: string
+          deleted_at?: string | null
           due_on?: string | null
           event_id?: string | null
           id?: string
@@ -471,6 +512,7 @@ export type Database = {
           assignee_id?: string
           completed?: boolean
           created_at?: string
+          deleted_at?: string | null
           due_on?: string | null
           event_id?: string | null
           id?: string
@@ -489,11 +531,33 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           category: string
           contact: string
           created_at: string
+          deleted_at: string | null
           event_ids: string[]
           id: string
           name: string
@@ -505,6 +569,7 @@ export type Database = {
           category?: string
           contact?: string
           created_at?: string
+          deleted_at?: string | null
           event_ids?: string[]
           id?: string
           name: string
@@ -516,6 +581,7 @@ export type Database = {
           category?: string
           contact?: string
           created_at?: string
+          deleted_at?: string | null
           event_ids?: string[]
           id?: string
           name?: string
@@ -531,7 +597,17 @@ export type Database = {
     }
     Functions: {
       backfill_portal_tokens: { Args: never; Returns: number }
+      can_assist: { Args: never; Returns: boolean }
+      can_write: { Args: never; Returns: boolean }
       current_portal_token: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
       mark_overdue_invoices: { Args: never; Returns: undefined }
       portal_client_access: { Args: { _client_id: string }; Returns: boolean }
       portal_current_client: {
@@ -547,7 +623,7 @@ export type Database = {
       rotate_portal_token: { Args: { p_client_id: string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "planner" | "assistant" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -674,6 +750,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "planner", "assistant", "viewer"],
+    },
   },
 } as const
