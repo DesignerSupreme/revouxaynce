@@ -183,3 +183,162 @@ export function calcInvoiceTotals(
 export function calcMilestoneAmount(grandTotal: number, milestone: Milestone): number {
   return grandTotal * (milestone.percentage / 100);
 }
+
+// ─── Client Review Modules (Phase 6) ──────────────────────────────
+export type BudgetLine = {
+  id: string;
+  budget_id: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  vendor_name: string | null;
+  vendor_id: string | null;
+  status: "Estimated" | "Confirmed";
+  position: number;
+};
+
+export type Concept = {
+  id: string;
+  event_id: string;
+  name: string;
+  summary: string | null;
+  position: number;
+  status: "Draft" | "Shared" | "Chosen" | "Not chosen" | "Changes Requested";
+  shared_at: string | null;
+};
+
+export type Budget = {
+  id: string;
+  event_id: string;
+  concept_id: string | null;
+  title: string;
+  currency: string;
+  status: "Draft" | "Shared" | "Approved" | "Changes Requested";
+  contingency_type: "percent" | "flat";
+  contingency_value: number;
+  notes: string | null;
+  internal_notes?: string | null; // never populated on the portal
+  version: number;
+  parent_id: string | null;
+  shared_at: string | null;
+};
+
+export type InspirationBoard = {
+  id: string;
+  event_id: string;
+  concept_id: string | null;
+  title: string;
+  description: string | null;
+  status: "Draft" | "Shared" | "Approved" | "Changes Requested";
+  cover_item_id: string | null;
+  shared_at: string | null;
+};
+
+export type InspirationItem = {
+  id: string;
+  board_id: string;
+  storage_path: string;
+  caption: string | null;
+  category: string | null;
+  source_url: string | null;
+  position: number;
+};
+
+export type VendorOption = {
+  id: string;
+  event_id: string;
+  concept_id: string | null;
+  title: string;
+  category: string | null;
+  description: string | null;
+  selection_mode: "single" | "multiple";
+  status: "Draft" | "Shared" | "Decided" | "Changes Requested";
+  shared_at: string | null;
+};
+
+export type VendorOptionItem = {
+  id: string;
+  option_id: string;
+  vendor_name: string;
+  vendor_id: string | null;
+  headline: string | null;
+  description: string | null;
+  price: number | null;
+  image_path: string | null;
+  link_url: string | null;
+  position: number;
+};
+
+export type PortalSubjectType =
+  | "concept"
+  | "inspiration_board"
+  | "inspiration_item"
+  | "budget"
+  | "budget_line"
+  | "vendor_option"
+  | "vendor_option_item";
+
+export type PortalResponseAction =
+  | "approved"
+  | "changes_requested"
+  | "favourited"
+  | "unfavourited"
+  | "selected"
+  | "deselected"
+  | "commented";
+
+export type PortalResponse = {
+  id: string;
+  client_id: string;
+  event_id: string | null;
+  subject_type: PortalSubjectType;
+  subject_id: string;
+  action: PortalResponseAction;
+  body: string | null;
+  created_at: string;
+};
+
+export const BUDGET_CATEGORIES = [
+  "Venue", "Catering", "Décor & Florals", "Photography & Video",
+  "Entertainment", "Stationery", "Attire & Beauty", "Transport",
+  "Staffing", "Other",
+] as const;
+
+/** Single source of truth for every budget figure shown anywhere. */
+export function calcBudgetTotals(
+  budget: Pick<Budget, "contingency_type" | "contingency_value">,
+  lines: BudgetLine[],
+) {
+  const lineTotals = lines.map(l => ({
+    ...l,
+    total: (Number(l.quantity) || 0) * (Number(l.unit_price) || 0),
+  }));
+
+  const subtotal = lineTotals.reduce((s, l) => s + l.total, 0);
+
+  const byCategory = BUDGET_CATEGORIES
+    .map(category => {
+      const total = lineTotals.filter(l => l.category === category).reduce((s, l) => s + l.total, 0);
+      return { category, total, share: subtotal > 0 ? total / subtotal : 0 };
+    })
+    .filter(c => c.total > 0);
+
+  const contingency = budget.contingency_type === "percent"
+    ? subtotal * (Number(budget.contingency_value) || 0) / 100
+    : (Number(budget.contingency_value) || 0);
+
+  const confirmed = lineTotals
+    .filter(l => l.status === "Confirmed")
+    .reduce((s, l) => s + l.total, 0);
+
+  return {
+    lineTotals,
+    byCategory,
+    subtotal,
+    contingency,
+    grandTotal: subtotal + contingency,
+    confirmed,
+    confirmedShare: subtotal > 0 ? confirmed / subtotal : 0,
+  };
+}
