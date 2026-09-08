@@ -4,6 +4,7 @@ import { PortalLogin } from "@/views/portal/PortalLogin";
 import { PortalEventList } from "@/views/portal/PortalEventList";
 import { PortalInvoiceTable } from "@/views/portal/PortalInvoices";
 import logo from "@/assets/revouxaynce-logo.svg";
+import { SkeletonLines, SkeletonTable } from "@/components/app/Skeleton";
 
 export function ClientPortalView({ token }: { token: string | null }) {
   const { client, events, invoices, loading, denied, updateInvoiceStatus } = usePortalData(token);
@@ -12,8 +13,11 @@ export function ClientPortalView({ token }: { token: string | null }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-sm font-sans text-muted-foreground">Loading your events…</p>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+          <SkeletonLines lines={2} label="Loading your events" />
+          <SkeletonTable rows={4} cols={4} label="Loading your events" />
+        </div>
       </div>
     );
   }
