@@ -28,6 +28,7 @@ import { ExpensesView } from "@/views/ExpensesView";
 import { GuestsView } from "@/views/GuestsView";
 import { TeamView } from "@/views/TeamView";
 import { TasksView } from "@/views/TasksView";
+import { CommandPalette, type Command } from "@/components/app/CommandPalette";
 
 // ═══════════════════════════════════════════════════════════════════
 // MAIN APP
@@ -231,6 +232,33 @@ function AppShell({ currentUser, onLogout }: {
   const mobileNavVisible = navItems.slice(0, 5);
   const mobileNavOverflow = navItems.slice(5);
   const [mobileOverflowOpen, setMobileOverflowOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const commands: Command[] = React.useMemo(() => {
+    const list: Command[] = navItems.map((n) => ({
+      id: `go-${n.key}`,
+      label: `Go to ${n.label}`,
+      group: "Pages",
+      keywords: n.key,
+      run: () => handleNav(n.key),
+    }));
+    list.push({ id: "print", label: "Print this page", group: "Actions", keywords: "paper run sheet", run: () => window.print() });
+    if (admin) list.push({ id: "settings", label: "Open settings", group: "Actions", keywords: "sample data import", run: () => setSettingsOpen(true) });
+    list.push({ id: "signout", label: "Sign out", group: "Actions", run: onLogout });
+    return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navItems, admin]);
 
   const SidebarLogo = () => (
     <div className="px-4 py-6 border-b border-sidebar-border flex justify-center">
