@@ -6,7 +6,7 @@ import {
 import logo from "@/assets/revouxaynce-logo.svg";
 import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Invoice, Milestone } from "@/types";
 import { uid } from "@/lib/helpers";
-import { seedTeam, buildSeedDataset } from "@/lib/seedData";
+import { buildSeedDataset } from "@/lib/seedData";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useAuthRole } from "@/hooks/useAuthRole";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
