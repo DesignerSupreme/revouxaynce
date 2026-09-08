@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Store, DollarSign, UserCheck,
-  LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal, ClipboardList, Search
+  LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal, ClipboardList, Search, Palette
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
 import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Invoice, Milestone } from "@/types";
