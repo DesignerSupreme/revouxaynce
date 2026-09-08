@@ -28,6 +28,7 @@ import { ExpensesView } from "@/views/ExpensesView";
 import { GuestsView } from "@/views/GuestsView";
 import { TeamView } from "@/views/TeamView";
 import { TasksView } from "@/views/TasksView";
+import { DesignView } from "@/views/DesignView";
 import { CommandPalette, type Command } from "@/components/app/CommandPalette";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -210,6 +211,7 @@ function AppShell({ currentUser, onLogout }: {
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { key: "events", label: "Events", icon: CalendarDays },
     { key: "tasks", label: "Tasks", icon: ClipboardList },
+    { key: "design", label: "Design", icon: Palette },
     { key: "clients", label: "Clients", icon: Users },
     { key: "vendors", label: "Vendors", icon: Store },
     { key: "finances", label: "Finances", icon: DollarSign },
@@ -363,6 +365,7 @@ function AppShell({ currentUser, onLogout }: {
             {tab === "finances" && <FinancesView expenses={expenses} budgets={budgets} log={log} toast={toast} />}
             {tab === "expenses" && <ExpensesView expenses={expenses} setExpenses={guard("expenses", setExpenses)} events={events} log={log} toast={toast} />}
             {tab === "guests" && <GuestsView guests={guests} setGuests={guard("guests", setGuests)} events={events} log={log} toast={toast} />}
+            {tab === "design" && <DesignView events={events} clients={clients} canEdit={canEdit(role, "events")} toast={toast} />}
             {tab === "team" && <TeamView currentUserId={currentUser.id} currentRole={role} toast={toast} log={log} />}
           </div>
         </div>
