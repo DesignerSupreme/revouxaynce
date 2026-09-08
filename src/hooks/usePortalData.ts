@@ -60,6 +60,7 @@ export function usePortalData(token: string | null): PortalData {
       name: row.name,
       email: row.email ?? "",
       phone: row.phone ?? "",
+      pipelineStage: "Enquiry",
       eventType: "",
       status: "",
       notes: [],
