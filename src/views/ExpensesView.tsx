@@ -115,7 +115,7 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
     const fd = new FormData(e.currentTarget);
     const obj = Object.fromEntries(fd.entries()) as Record<string, string>;
     const amount = parseFloat(obj.amount) || 0;
-    setExpenses(ex => [...ex, { id: uid(), date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: obj.receiptUrl || "" }]);
+    setExpenses(ex => [...ex, { id: uid(), date: obj.date || "", vendor: obj.vendor || "", category: obj.category || "", amount, currency: "USD", fxRate: 1, paid: false, eventId: obj.eventId || "", notes: obj.notes || "", receiptUrl: obj.receiptUrl || "" }]);
     toast("Expense from receipt added"); log(`Scanned receipt: ${obj.vendor} ${fmt$(amount)}`);
     setScanModal(false); setScanResult(null);
   };
@@ -157,9 +157,12 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
         </select>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+      <FxRatesPanel toast={toast} />
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[
-          { label: "Total", value: totalFiltered, isMoney: true },
+          { label: "Total (USD)", value: totalFiltered, isMoney: true },
+          { label: "Unpaid (USD)", value: unpaidTotal, isMoney: true },
           { label: "Count", value: filtered.length },
           { label: "Avg / Expense", value: filtered.length > 0 ? totalFiltered / filtered.length : 0, isMoney: true },
         ].map((c, i) => (
