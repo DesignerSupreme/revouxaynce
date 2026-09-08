@@ -22,6 +22,7 @@ export function useInvoices() {
     const { data, error: err } = await supabase
       .from("invoices")
       .select("*, line_items(*)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (err) { setError(err.message); setLoading(false); return; }
@@ -124,8 +125,17 @@ export function useInvoices() {
     return inv;
   };
 
+  /** Soft delete — the invoice is hidden but restorable. */
   const deleteInvoice = async (id: string) => {
-    const { error: err } = await supabase.from("invoices").delete().eq("id", id);
+    const { error: err } = await supabase.from("invoices").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    if (err) throw new Error(err.message);
+    await logAudit(id, "Deleted", "Moved to removed items");
+    await fetchInvoices();
+  };
+
+  const restoreInvoices = async (ids: string[]) => {
+    if (!ids.length) return;
+    const { error: err } = await supabase.from("invoices").update({ deleted_at: null }).in("id", ids);
     if (err) throw new Error(err.message);
     await fetchInvoices();
   };
@@ -192,7 +202,7 @@ export function useInvoices() {
   };
 
   const bulkDelete = async (ids: string[]) => {
-    const { error: err } = await supabase.from("invoices").delete().in("id", ids);
+    const { error: err } = await supabase.from("invoices").update({ deleted_at: new Date().toISOString() }).in("id", ids);
     if (err) throw new Error(err.message);
     await fetchInvoices();
   };
@@ -209,7 +219,7 @@ export function useInvoices() {
 
   return {
     invoices, loading, error, fetchInvoices,
-    createInvoice, updateInvoice, deleteInvoice, duplicateInvoice,
+    createInvoice, updateInvoice, deleteInvoice, restoreInvoices, duplicateInvoice,
     createRevision, sendInvoiceEmail, markOverdue, updateStatus,
     updateMilestones, bulkUpdateStatus, bulkDelete, logAudit, getRevisions,
   };
