@@ -163,7 +163,7 @@ export interface BrandSettings {
   terms_and_conditions: string;
 }
 
-export type Tab = "dashboard" | "events" | "clients" | "vendors" | "finances" | "guests" | "expenses" | "team" | "tasks";
+export type Tab = "dashboard" | "events" | "clients" | "vendors" | "finances" | "guests" | "expenses" | "team" | "tasks" | "design";
 
 // ─── Calculation Helpers ──────────────────────────────────────────
 export function calcInvoiceTotals(

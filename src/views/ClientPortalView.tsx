@@ -3,6 +3,7 @@ import { usePortalData } from "@/hooks/usePortalData";
 import { PortalLogin } from "@/views/portal/PortalLogin";
 import { PortalEventList } from "@/views/portal/PortalEventList";
 import { PortalInvoiceTable } from "@/views/portal/PortalInvoices";
+import { PortalMoodBoards } from "@/views/portal/PortalMoodBoards";
 import logo from "@/assets/revouxaynce-logo.svg";
 import { SkeletonLines, SkeletonTable } from "@/components/app/Skeleton";
 
@@ -40,6 +41,7 @@ export function ClientPortalView({ token }: { token: string | null }) {
         </p>
 
         <PortalEventList events={events} invoices={invoices} client={client} onUpdateStatus={updateInvoiceStatus} />
+        <PortalMoodBoards token={token} events={events} />
         <PortalInvoiceTable invoices={invoices} events={events} client={client} />
 
         <div className="mt-12 pt-6 border-t border-input text-center">
