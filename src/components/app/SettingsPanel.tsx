@@ -55,6 +55,9 @@ export function SettingsPanel({ open, onClose, sampleDataEnabled, onToggleSample
             </div>
           </div>
 
+          {/* Import browser data into Postgres */}
+          <DataImportPanel toast={toast} onImported={onImported} />
+
           {/* Export Data */}
           <div>
             <h3 className="text-xs font-sans uppercase tracking-wider text-muted-foreground mb-4">Data Management</h3>
