@@ -1,6 +1,7 @@
 import React from "react";
 import { X, Settings, ToggleLeft, ToggleRight, RotateCcw, Download } from "lucide-react";
 import { downloadExport } from "@/lib/dataService";
+import { DataImportPanel } from "@/components/app/DataImportPanel";
 
 interface SettingsPanelProps {
   open: boolean;
@@ -8,10 +9,11 @@ interface SettingsPanelProps {
   sampleDataEnabled: boolean;
   onToggleSampleData: () => void;
   onResetData: () => void;
+  onImported: () => void;
   toast: (msg: string) => void;
 }
 
-export function SettingsPanel({ open, onClose, sampleDataEnabled, onToggleSampleData, onResetData, toast }: SettingsPanelProps) {
+export function SettingsPanel({ open, onClose, sampleDataEnabled, onToggleSampleData, onResetData, onImported, toast }: SettingsPanelProps) {
   if (!open) return null;
 
   const handleExport = () => {
