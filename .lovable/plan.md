@@ -1,32 +1,35 @@
+# Revouxaynce System Handover PDF
 
+Produce a single, polished PDF describing the whole system, written so another AI (or developer) can pick it up and improve it without further context.
 
-## Plan: Link Seed Data and Portal Access
+## Why a new document
 
-### How to Access the Portal
-Navigate to `/portal` in the app (e.g., `https://revouxaynce.lovable.app/portal`). Log in with any client email from the seed data, such as:
-- `tariro@moyo.co.zw`
-- `tendai@ndlovu.co.zw`
-- `sophie@lancaster.co.uk`
+The existing review document was written before the backend migration. It predates the Lovable Cloud database, the client portal actions, milestone billing, invoice revisions, audit logs, team comments, automated reminders, the analytics dashboard, and the security hardening work. The handover PDF will be regenerated from the current code and database.
 
-### The Problem
-All seed data uses `clientId: ""`, `eventId: ""` — so the portal finds no matching events or invoices for any client. Everything appears empty.
+## Contents of the PDF
 
-### The Fix
-Rewrite `seedData.ts` to use **stable, pre-generated IDs** instead of `uid()` so that records can reference each other:
+1. Cover page — product name, logo, date, purpose ("handover for AI-assisted improvement")
+2. Executive summary — what the tool does and who uses it
+3. Architecture overview — front end structure, backend services, hybrid storage (database vs. browser storage for expenses, vendors, guests)
+4. Data model — every table with its fields, relationships, and an entity diagram
+5. Access rules — who can read and write what, including how client portal access is checked
+6. Feature inventory — dashboard, events, clients, vendors, guests, expenses, team, tasks, finances/invoicing, client portal, analytics, settings
+7. Invoice lifecycle — quotation to paid, milestone billing, revisions, PDF output, reminders
+8. Background automation — the scheduled reminder job and overdue marking
+9. Design system — colors, typography, animation conventions
+10. File-by-file map — each source file with its responsibility (no full source dumps; the PDF stays readable)
+11. Known gaps and improvement backlog — prioritised, with reasoning
+12. How to work on this app — conventions, pitfalls, things not to break
 
-1. **Generate fixed IDs** for all clients and events upfront
-2. **Link events to clients** — e.g., "The Moyo Gala" → Tariro Moyo's ID
-3. **Link invoices to clients AND events** — each invoice references both
-4. **Link guests to events** — each guest belongs to a specific event
-5. **Link expenses to events** — each expense tied to an event
-6. **Link vendors to events** via `eventIds` array
-7. **Add sample tasks** linked to events with proper stages (Planning, Vendor Coordination, etc.) so the portal progress bars work
-8. **Bump localStorage keys** to `_v4` (or clear on seed) so existing users get the new linked data
+## How it gets built
 
-### Files Changed
-- `src/lib/seedData.ts` — rewrite with stable IDs and cross-references
-- `src/pages/Index.tsx` — update localStorage keys if needed to force re-seed
+- Gather current state first: read the source tree and query the live database schema and access rules so nothing is asserted from memory.
+- Generate the PDF with a Python script using ReportLab, styled with the Revouxaynce brand colors and logo.
+- Include an entity-relationship diagram and a feature/status table.
+- Quality check: render every page to an image and inspect for clipped text, overlap, or broken layout; fix and re-render until clean.
+- Deliver as a downloadable file in chat.
 
-### No Other Changes
-All views, portal, and components stay the same — they already filter by `clientId`/`eventId`, they just need actual values in the data.
+## Notes
 
+- No application code changes. This task only produces a document.
+- The older markdown review stays where it is; the PDF supersedes it.
