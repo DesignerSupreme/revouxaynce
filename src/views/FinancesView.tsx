@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Loader2, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote, PieChart } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, BarChart3, TrendingUp, Download, Send, Copy, Filter, ChevronDown, ChevronRight, Clock, Palette, GitBranch, Milestone as MilestoneIcon, MessageSquare, User, StickyNote, PieChart } from "lucide-react";
+import { SkeletonCards, SkeletonTable } from "@/components/app/Skeleton";
 import type { Expense, BudgetItem, Invoice, Client, Event, Milestone, MilestoneStatus } from "@/types";
 import { calcInvoiceTotals, calcMilestoneAmount } from "@/types";
 import { fmt$, fmtDate, shortDate, invoicesToCsv, invoiceReportCsv } from "@/lib/helpers";
@@ -276,7 +277,7 @@ export function FinancesView({ expenses, budgets, log, toast }: FinancesViewProp
   const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map(i => i.id))); };
 
   if (loading || clientsLoading || eventsLoading) {
-    return (<div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-muted-foreground" size={32} /><span className="ml-3 text-sm text-muted-foreground font-sans">Loading finances…</span></div>);
+    return (<div className="py-2"><SkeletonCards count={4} label="Loading finances" /><SkeletonTable rows={6} cols={6} label="Loading invoices" /></div>);
   }
 
   // ─── DETAIL VIEW ─────────────────────────────────────────

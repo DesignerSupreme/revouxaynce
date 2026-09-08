@@ -204,7 +204,8 @@ export function ExpensesView({ expenses, setExpenses, events, log, toast }: Expe
         </FadeInUp>
       </div>
 
-      {filtered.length === 0 ? <Empty icon={Receipt} text="No expenses yet." /> : (
+      {filtered.length === 0 ? <Empty icon={Receipt} text="No spending recorded yet."
+        hint="Log what each event costs so you can see the money going out next to the money coming in." /> : (
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-sm font-sans min-w-[640px]">
             <thead><tr className="border-b border-foreground text-left text-xs uppercase tracking-wider text-muted-foreground">

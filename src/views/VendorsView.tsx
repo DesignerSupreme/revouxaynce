@@ -87,7 +87,8 @@ export function VendorsView({ vendors, setVendors, events, log, toast }: Vendors
         </div>
       </div>
       <VendorPayables />
-      {filtered.length === 0 ? <Empty icon={Store} text="No vendors found." /> : (
+      {filtered.length === 0 ? <Empty icon={Store} text="No vendors yet."
+        hint="Keep caterers, venues, decorators and their contacts in one place, ready to attach to an event." /> : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
           {filtered.map((v, i) => (
             <FadeInUp key={v.id} delay={i * 60}>

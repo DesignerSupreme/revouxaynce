@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Store, DollarSign, UserCheck,
-  LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal, ClipboardList
+  LogOut, Shield, Menu, Receipt, Settings, MoreHorizontal, ClipboardList, Search
 } from "lucide-react";
 import logo from "@/assets/revouxaynce-logo.svg";
 import type { TeamMember, Tab, TimelineBlock, BudgetItem, Activity, Invoice, Milestone } from "@/types";
@@ -28,6 +28,7 @@ import { ExpensesView } from "@/views/ExpensesView";
 import { GuestsView } from "@/views/GuestsView";
 import { TeamView } from "@/views/TeamView";
 import { TasksView } from "@/views/TasksView";
+import { CommandPalette, type Command } from "@/components/app/CommandPalette";
 
 // ═══════════════════════════════════════════════════════════════════
 // MAIN APP
@@ -231,6 +232,33 @@ function AppShell({ currentUser, onLogout }: {
   const mobileNavVisible = navItems.slice(0, 5);
   const mobileNavOverflow = navItems.slice(5);
   const [mobileOverflowOpen, setMobileOverflowOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const commands: Command[] = React.useMemo(() => {
+    const list: Command[] = navItems.map((n) => ({
+      id: `go-${n.key}`,
+      label: `Go to ${n.label}`,
+      group: "Pages",
+      keywords: n.key,
+      run: () => handleNav(n.key),
+    }));
+    list.push({ id: "print", label: "Print this page", group: "Actions", keywords: "paper run sheet", run: () => window.print() });
+    if (admin) list.push({ id: "settings", label: "Open settings", group: "Actions", keywords: "sample data import", run: () => setSettingsOpen(true) });
+    list.push({ id: "signout", label: "Sign out", group: "Actions", run: onLogout });
+    return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navItems, admin]);
 
   const SidebarLogo = () => (
     <div className="px-4 py-6 border-b border-sidebar-border flex justify-center">
@@ -304,13 +332,20 @@ function AppShell({ currentUser, onLogout }: {
         </div>
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
-          {admin && (
-            <div className="hidden md:flex justify-end mb-2">
-              <button onClick={() => setSettingsOpen(true)} className="p-2 hover:bg-muted transition-all duration-200 hover:scale-105" title="Settings">
+          <div className="hidden md:flex justify-end gap-2 mb-2 print:hidden">
+            <button onClick={() => setPaletteOpen(true)}
+              className="flex items-center gap-2 border border-input px-3 py-1.5 text-xs font-sans text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
+              aria-label="Open quick search">
+              <Search size={14} aria-hidden="true" /> Quick search
+              <kbd className="border border-input px-1 text-[10px] uppercase">⌘K</kbd>
+            </button>
+            {admin && (
+              <button onClick={() => setSettingsOpen(true)} className="p-2 hover:bg-muted transition-all duration-200 hover:scale-105" title="Settings" aria-label="Settings">
                 <Settings size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
               </button>
-            </div>
-          )}
+            )}
+          </div>
+
 
           {!canWrite(role) && (
             <div className="mb-4 border border-foreground px-3 py-2 text-xs font-sans">
@@ -366,6 +401,9 @@ function AppShell({ currentUser, onLogout }: {
           sampleDataEnabled={sampleDataEnabled} onToggleSampleData={toggleSampleData} onResetData={resetAllData}
           onImported={refreshAll} toast={toast} />
       )}
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
+
     </div>
   );
 }

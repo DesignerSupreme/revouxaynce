@@ -1,6 +1,7 @@
 import React from "react";
 import { Shield, RefreshCw } from "lucide-react";
 import { Empty } from "@/components/app/Empty";
+import { SkeletonLines } from "@/components/app/Skeleton";
 import { FadeInUp } from "@/components/app/FadeInUp";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { ROLES, ROLE_DESCRIPTIONS, ROLE_LABELS, type Role } from "@/lib/permissions";
@@ -50,9 +51,12 @@ export function TeamView({ currentUserId, currentRole, toast, log }: TeamViewPro
       </div>
 
       {loading ? (
-        <p className="text-sm font-sans text-muted-foreground">Loading accounts…</p>
+        <div className="space-y-3">
+          {[0, 1, 2].map(i => <div key={i} className="border border-foreground p-5"><SkeletonLines lines={2} label="Loading accounts" /></div>)}
+        </div>
       ) : members.length === 0 ? (
-        <Empty icon={Shield} text="No accounts yet." />
+        <Empty icon={Shield} text="No accounts yet."
+          hint="People appear here once they sign up with their work email. Then you set what each person can do." />
       ) : (
         <div className="space-y-3">
           {members.map((m, i) => (
